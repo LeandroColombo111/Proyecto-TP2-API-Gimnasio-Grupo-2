@@ -1,0 +1,255 @@
+@baseUrl = http://localhost:8000
+
+### Health
+GET {{baseUrl}}/health
+
+### Ruta inexistente (404 ROUTE_NOT_FOUND)
+GET {{baseUrl}}/nada
+
+########## SOCIOS ##########
+
+### Listar socios
+GET {{baseUrl}}/socios
+
+### Obtener socio por id
+GET {{baseUrl}}/socios/1
+
+### Socio inexistente (404 SOCIO_NOT_FOUND)
+GET {{baseUrl}}/socios/999
+
+### Id inválido (400)
+GET {{baseUrl}}/socios/abc
+
+### Crear socio (201)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "Julia",
+  "apellido": "Medina",
+  "email": "julia.medina@mail.com",
+  "dni": "33444555",
+  "telefono": "1155550010"
+}
+
+### Crear socio sin teléfono (201, activo=true por defecto)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "Pablo",
+  "apellido": "Ibarra",
+  "email": "pablo.ibarra@mail.com",
+  "dni": "34555666"
+}
+
+### Email duplicado (409 EMAIL_DUPLICADO)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "Otro",
+  "apellido": "Socio",
+  "email": "lucia.fernandez@mail.com",
+  "dni": "40000001"
+}
+
+### DNI duplicado (409 DNI_DUPLICADO)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "Otro",
+  "apellido": "Socio",
+  "email": "otro@mail.com",
+  "dni": "30123456"
+}
+
+### Body vacío (400 VALIDATION_ERROR)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{}
+
+### Email y DNI inválidos (400)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "X",
+  "apellido": "Y",
+  "email": "no-es-un-email",
+  "dni": "12"
+}
+
+### JSON mal formado (400 INVALID_JSON)
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{ "nombre": "Julia", }
+
+### Modificar socio (200)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{
+  "telefono": "1155559999"
+}
+
+### Modificar conservando su propio email (200, no es duplicado)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{
+  "email": "lucia.fernandez@mail.com"
+}
+
+### Modificar con el email de otro socio (409 EMAIL_DUPLICADO)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{
+  "email": "martin.gomez@mail.com"
+}
+
+### Modificar con el DNI de otro socio (409 DNI_DUPLICADO)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{
+  "dni": "32456789"
+}
+
+### Modificar sin campos (400)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{}
+
+### Modificar con campo desconocido (400)
+PUT {{baseUrl}}/socios/1
+Content-Type: application/json
+
+{
+  "edad": 30
+}
+
+### Modificar socio inexistente (404)
+PUT {{baseUrl}}/socios/999
+Content-Type: application/json
+
+{
+  "nombre": "Nadie"
+}
+
+### Borrar socio (204)
+DELETE {{baseUrl}}/socios/3
+
+### Borrar socio inexistente (404)
+DELETE {{baseUrl}}/socios/999
+
+########## CLASES ##########
+
+### Listar clases
+GET {{baseUrl}}/clases
+
+### Obtener clase por id
+GET {{baseUrl}}/clases/2
+
+### Clase inexistente (404 CLASE_NOT_FOUND)
+GET {{baseUrl}}/clases/999
+
+### Id inválido (400)
+GET {{baseUrl}}/clases/abc
+
+### Crear clase (201, cuposDisponibles = cupoMaximo)
+POST {{baseUrl}}/clases
+Content-Type: application/json
+
+{
+  "nombre": "Pilates",
+  "instructor": "Marina Ruiz",
+  "dia": "martes",
+  "horario": "10:30",
+  "cupoMaximo": 12
+}
+
+### Día inválido (400)
+POST {{baseUrl}}/clases
+Content-Type: application/json
+
+{
+  "nombre": "Pilates",
+  "instructor": "Marina Ruiz",
+  "dia": "domingo",
+  "horario": "10:30",
+  "cupoMaximo": 12
+}
+
+### Horario inválido (400)
+POST {{baseUrl}}/clases
+Content-Type: application/json
+
+{
+  "nombre": "Pilates",
+  "instructor": "Marina Ruiz",
+  "dia": "martes",
+  "horario": "25:99",
+  "cupoMaximo": 12
+}
+
+### Cupo inválido (400)
+POST {{baseUrl}}/clases
+Content-Type: application/json
+
+{
+  "nombre": "Pilates",
+  "instructor": "Marina Ruiz",
+  "dia": "martes",
+  "horario": "10:30",
+  "cupoMaximo": 0
+}
+
+### Body vacío (400)
+POST {{baseUrl}}/clases
+Content-Type: application/json
+
+{}
+
+### Modificar clase (200)
+PUT {{baseUrl}}/clases/1
+Content-Type: application/json
+
+{
+  "horario": "09:00"
+}
+
+### Modificar cupo máximo (200, cuposDisponibles se recalcula)
+PUT {{baseUrl}}/clases/1
+Content-Type: application/json
+
+{
+  "cupoMaximo": 20
+}
+
+### cuposDisponibles no se puede enviar (400)
+PUT {{baseUrl}}/clases/1
+Content-Type: application/json
+
+{
+  "cuposDisponibles": 5
+}
+
+### Modificar clase inexistente (404)
+PUT {{baseUrl}}/clases/999
+Content-Type: application/json
+
+{
+  "nombre": "Nada"
+}
+
+### Borrar clase (204)
+DELETE {{baseUrl}}/clases/3
+
+### Borrar clase inexistente (404)
+DELETE {{baseUrl}}/clases/999
