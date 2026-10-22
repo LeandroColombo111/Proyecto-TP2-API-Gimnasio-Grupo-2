@@ -1,0 +1,497 @@
+openapi: 3.0.3
+info:
+  title: API Gimnasio
+  version: 1.0.0
+  description: API REST para gestionar socios, clases e inscripciones de un gimnasio.
+servers:
+  - url: http://localhost:8000
+tags:
+  - name: Socios
+    description: Alta, consulta, modificación y baja de socios
+  - name: Clases
+    description: Alta, consulta, modificación y baja de clases
+
+paths:
+  /socios:
+    get:
+      tags: [Socios]
+      summary: Listar socios
+      responses:
+        "200":
+          description: Lista de socios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Socio"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Socios]
+      summary: Crear un socio
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocioCreate"
+            example:
+              nombre: Julia
+              apellido: Medina
+              email: julia.medina@mail.com
+              dni: "33444555"
+              telefono: "1155550010"
+      responses:
+        "201":
+          description: Socio creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Socio"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          description: El email o el DNI ya están registrados
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                emailDuplicado:
+                  value:
+                    error: { code: EMAIL_DUPLICADO, message: Ya existe un socio con ese email }
+                dniDuplicado:
+                  value:
+                    error: { code: DNI_DUPLICADO, message: Ya existe un socio con ese DNI }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /socios/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Socios]
+      summary: Obtener un socio por id
+      responses:
+        "200":
+          description: Socio encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Socio"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: El socio no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: SOCIO_NOT_FOUND, message: No existe un socio con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Socios]
+      summary: Modificar un socio
+      description: Se puede enviar solo los campos a cambiar, pero al menos uno.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SocioUpdate"
+            example:
+              telefono: "1155559999"
+              activo: false
+      responses:
+        "200":
+          description: Socio modificado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Socio"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: El socio no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: SOCIO_NOT_FOUND, message: No existe un socio con ese id }
+        "409":
+          description: El email o el DNI pertenecen a otro socio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: EMAIL_DUPLICADO, message: Ya existe un socio con ese email }
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Socios]
+      summary: Borrar un socio
+      responses:
+        "204":
+          description: Socio borrado
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: El socio no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: SOCIO_NOT_FOUND, message: No existe un socio con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /clases:
+    get:
+      tags: [Clases]
+      summary: Listar clases
+      responses:
+        "200":
+          description: Lista de clases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clase"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Clases]
+      summary: Crear una clase
+      description: cuposDisponibles lo calcula el sistema y arranca igual a cupoMaximo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaseCreate"
+            example:
+              nombre: Pilates
+              instructor: Marina Ruiz
+              dia: martes
+              horario: "10:30"
+              cupoMaximo: 12
+      responses:
+        "201":
+          description: Clase creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clase"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /clases/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Clases]
+      summary: Obtener una clase por id
+      responses:
+        "200":
+          description: Clase encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clase"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La clase no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Clases]
+      summary: Modificar una clase
+      description: Se puede enviar solo los campos a cambiar, pero al menos uno.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaseUpdate"
+            example:
+              horario: "09:00"
+              cupoMaximo: 20
+      responses:
+        "200":
+          description: Clase modificada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Clase"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La clase no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Clases]
+      summary: Borrar una clase
+      responses:
+        "204":
+          description: Clase borrada
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La clase no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      description: Identificador numérico del recurso
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+              example: VALIDATION_ERROR
+            message:
+              type: string
+              example: Datos de body inválidos
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                    example: email
+                  message:
+                    type: string
+                    example: El email no es válido
+
+    Socio:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Lucía
+        apellido:
+          type: string
+          example: Fernández
+        email:
+          type: string
+          format: email
+          example: lucia.fernandez@mail.com
+        dni:
+          type: string
+          pattern: "^\\d{7,8}$"
+          example: "30123456"
+        telefono:
+          type: string
+          nullable: true
+          example: "1155550001"
+        activo:
+          type: boolean
+          example: true
+
+    SocioCreate:
+      type: object
+      required: [nombre, apellido, email, dni]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        apellido:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        dni:
+          type: string
+          pattern: "^\\d{7,8}$"
+        telefono:
+          type: string
+        activo:
+          type: boolean
+          default: true
+
+    SocioUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        apellido:
+          type: string
+          minLength: 1
+        email:
+          type: string
+          format: email
+        dni:
+          type: string
+          pattern: "^\\d{7,8}$"
+        telefono:
+          type: string
+        activo:
+          type: boolean
+
+    Clase:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2
+        nombre:
+          type: string
+          example: Spinning
+        instructor:
+          type: string
+          example: Ana Torres
+        dia:
+          $ref: "#/components/schemas/Dia"
+        horario:
+          type: string
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+          example: "19:00"
+        cupoMaximo:
+          type: integer
+          minimum: 1
+          example: 2
+        cuposDisponibles:
+          type: integer
+          minimum: 0
+          example: 2
+
+    ClaseCreate:
+      type: object
+      required: [nombre, instructor, dia, horario, cupoMaximo]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        instructor:
+          type: string
+          minLength: 1
+        dia:
+          $ref: "#/components/schemas/Dia"
+        horario:
+          type: string
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+        cupoMaximo:
+          type: integer
+          minimum: 1
+
+    ClaseUpdate:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        instructor:
+          type: string
+          minLength: 1
+        dia:
+          $ref: "#/components/schemas/Dia"
+        horario:
+          type: string
+          pattern: "^([01]\\d|2[0-3]):[0-5]\\d$"
+        cupoMaximo:
+          type: integer
+          minimum: 1
+
+    Dia:
+      type: string
+      enum: [lunes, martes, miercoles, jueves, viernes, sabado]
+      example: lunes
+
+  responses:
+    BadRequest:
+      description: Datos inválidos (body, params o JSON mal formado)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Datos de body inválidos
+              details:
+                - field: email
+                  message: El email no es válido
+    NotFound:
+      description: El recurso no existe
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: SOCIO_NOT_FOUND
+              message: No existe un socio con ese id
+    Conflict:
+      description: Conflicto con una regla de negocio
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: EMAIL_DUPLICADO
+              message: Ya existe un socio con ese email
+    InternalError:
+      description: Error inesperado del servidor
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error:
+              code: INTERNAL_ERROR
+              message: Ocurrió un error inesperado en el servidor
