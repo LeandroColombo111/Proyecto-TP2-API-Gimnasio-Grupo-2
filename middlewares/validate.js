@@ -14,11 +14,15 @@ function validate(schema, target = "body") {
       return next(new AppError("VALIDATION_ERROR", `Datos de ${target} inválidos`, 400, details));
     }
 
-    if (target === "body") {
-      req.body = result.data;
+    if (target === "query") {
+      // En Express 5 req.query es un getter que se recalcula en cada acceso: asignarle claves
+      // se pierde y reasignarlo directamente no se puede. Se lo redefine como propiedad propia
+      // para que el resto de la cadena reciba los valores ya convertidos (números, booleanos, defaults).
+      Object.defineProperty(req, "query", { value: result.data, writable: true, configurable: true, enumerable: true });
+    } else if (target === "params") {
+      Object.assign(req.params, result.data);
     } else {
-      // En Express 5 req.query es solo lectura (getter): no se puede reasignar, se mutan sus claves
-      Object.assign(req[target], result.data);
+      req.body = result.data;
     }
     next();
   };

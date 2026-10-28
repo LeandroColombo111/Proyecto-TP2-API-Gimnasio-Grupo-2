@@ -1,11 +1,24 @@
+import AppError from "../../errors/AppError.js";
+
 // Caso de uso: modificar una clase (null si no existe).
-async function updateClase(id, changes, dao) {
+// Si cambia cupoMaximo: no puede quedar por debajo de los inscriptos activos, y
+// los cupos disponibles se recalculan como cupoMaximo - inscriptos activos.
+async function updateClase(id, changes, dao, inscripcionesDao) {
+  const actual = await dao.getById(id);
+  if (!actual) return null;
+
   const cambios = { ...changes };
 
-  // TODO Sprint 2: cuposDisponibles = cupoMaximo - inscripciones activas, y rechazar con
-  // CUPO_INVALIDO si el nuevo cupo es menor a los inscriptos. Por ahora no hay inscripciones.
   if (cambios.cupoMaximo !== undefined) {
-    cambios.cuposDisponibles = cambios.cupoMaximo;
+    const activas = await inscripcionesDao.countActivasByClase(id);
+    if (cambios.cupoMaximo < activas) {
+      throw new AppError(
+        "CUPO_INVALIDO",
+        `El cupo máximo no puede ser menor a los inscriptos activos (${activas})`,
+        409,
+      );
+    }
+    cambios.cuposDisponibles = cambios.cupoMaximo - activas;
   }
 
   return dao.update(id, cambios);

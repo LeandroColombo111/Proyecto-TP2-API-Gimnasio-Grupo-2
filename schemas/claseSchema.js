@@ -22,6 +22,16 @@ export const updateClaseSchema = z
     message: "Debe enviar al menos un campo para modificar",
   });
 
+// Query de GET /clases. En la query todo llega como string.
+export const queryClasesSchema = z.object({
+  dia: z.enum(DIAS).optional(),
+  instructor: z.string().trim().min(1).optional(),
+  conCupo: z.enum(["true", "false"]).transform((valor) => valor === "true").optional(),
+  sort: z.enum(["horario", "-horario", "nombre", "-nombre"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
 export const claseIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });
