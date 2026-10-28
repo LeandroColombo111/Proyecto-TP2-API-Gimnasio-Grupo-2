@@ -12,9 +12,14 @@ class SociosController {
     return new AppError("SOCIO_NOT_FOUND", "No existe un socio con ese id", 404);
   }
 
-  // GET /socios
+  // GET /socios (?activo=&q=&sort=&page=&limit=)
   list = async (req, res) => {
-    res.json(await this.#useCases.getSocios());
+    res.json(await this.#useCases.getSocios(req.query));
+  };
+
+  // GET /socios/:id/clases
+  listClases = async (req, res) => {
+    res.json(await this.#useCases.getClasesDeSocio(req.params.id));
   };
 
   // GET /socios/:id

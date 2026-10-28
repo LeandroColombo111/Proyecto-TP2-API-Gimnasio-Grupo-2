@@ -29,6 +29,16 @@ export const updateSocioSchema = z
     message: "Debe enviar al menos un campo para modificar",
   });
 
+// Query de GET /socios. En la query todo llega como string.
+// "activo" se convierte a mano: z.coerce.boolean() tomaría "false" como true.
+export const querySociosSchema = z.object({
+  activo: z.enum(["true", "false"]).transform((valor) => valor === "true").optional(),
+  q: z.string().trim().min(1).optional(),
+  sort: z.enum(["apellido", "-apellido", "nombre", "-nombre"]).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(10),
+});
+
 export const socioIdParamSchema = z.object({
   id: z.coerce.number().int().positive(),
 });

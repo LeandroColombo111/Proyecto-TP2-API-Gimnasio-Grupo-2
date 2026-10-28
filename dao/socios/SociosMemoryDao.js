@@ -1,3 +1,5 @@
+import { ordenar, paginar } from "../memoryUtils.js";
+
 /**
  * DAO de Socios en memoria.
  * Todos los métodos son async para mantener la misma firma que tendrá el DAO de Sequelize.
@@ -17,9 +19,22 @@ class SociosMemoryDao {
     this.#nextId = maxId + 1;
   }
 
-  // Devuelve copias para que quien llama no pueda modificar el estado interno
-  async getAll() {
-    return this.#socios.map((socio) => ({ ...socio }));
+  // Filtra, ordena y pagina. Devuelve { items, total } (total = cantidad antes de paginar).
+  // Devuelve copias para que quien llama no pueda modificar el estado interno.
+  async getAll({ filtros = {}, sort, page = 1, limit = 10 } = {}) {
+    let socios = this.#socios;
+
+    if (filtros.activo !== undefined) {
+      socios = socios.filter((s) => s.activo === filtros.activo);
+    }
+    if (filtros.q) {
+      const texto = filtros.q.toLowerCase();
+      socios = socios.filter((s) => [s.nombre, s.apellido, s.email].some((campo) => campo.toLowerCase().includes(texto)));
+    }
+
+    const ordenados = ordenar(socios, sort);
+    const items = paginar(ordenados, page, limit).map((socio) => ({ ...socio }));
+    return { items, total: ordenados.length };
   }
 
   async getById(id) {

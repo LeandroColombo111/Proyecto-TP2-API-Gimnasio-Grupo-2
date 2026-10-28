@@ -12,9 +12,14 @@ class ClasesController {
     return new AppError("CLASE_NOT_FOUND", "No existe una clase con ese id", 404);
   }
 
-  // GET /clases
+  // GET /clases (?dia=&instructor=&conCupo=&sort=&page=&limit=)
   list = async (req, res) => {
-    res.json(await this.#useCases.getClases());
+    res.json(await this.#useCases.getClases(req.query));
+  };
+
+  // GET /clases/:id/socios
+  listSocios = async (req, res) => {
+    res.json(await this.#useCases.getSociosDeClase(req.params.id));
   };
 
   // GET /clases/:id
