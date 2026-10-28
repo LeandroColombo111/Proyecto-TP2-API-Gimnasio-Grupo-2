@@ -10,21 +10,46 @@ tags:
     description: Alta, consulta, modificación y baja de socios
   - name: Clases
     description: Alta, consulta, modificación y baja de clases
+  - name: Inscripciones
+    description: Inscripción de socios a clases (relación N a N) y cancelación
 
 paths:
   /socios:
     get:
       tags: [Socios]
       summary: Listar socios
+      description: Con filtros, orden y paginación.
+      parameters:
+        - name: activo
+          in: query
+          description: Filtra por socios activos (true) o inactivos (false)
+          schema:
+            type: boolean
+          example: true
+        - name: q
+          in: query
+          description: Texto a buscar en nombre, apellido o email
+          schema:
+            type: string
+          example: gom
+        - name: sort
+          in: query
+          description: Orden. El prefijo "-" indica descendente
+          schema:
+            type: string
+            enum: [apellido, -apellido, nombre, -nombre]
+          example: -apellido
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          description: Lista de socios
+          description: Página de socios
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Socio"
+                $ref: "#/components/schemas/PaginatedSocios"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
     post:
@@ -135,9 +160,47 @@ paths:
     delete:
       tags: [Socios]
       summary: Borrar un socio
+      description: No se puede borrar un socio con inscripciones activas.
       responses:
         "204":
           description: Socio borrado
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: El socio no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: SOCIO_NOT_FOUND, message: No existe un socio con ese id }
+        "409":
+          description: El socio tiene inscripciones activas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: SOCIO_CON_INSCRIPCIONES, message: No se puede borrar un socio con inscripciones activas }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /socios/{id}/clases:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Socios]
+      summary: Clases en las que el socio está inscripto
+      description: Devuelve las clases con una inscripción activa del socio.
+      responses:
+        "200":
+          description: Lista de clases (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Clase"
         "400":
           $ref: "#/components/responses/BadRequest"
         "404":
@@ -155,15 +218,43 @@ paths:
     get:
       tags: [Clases]
       summary: Listar clases
+      description: Con filtros, orden y paginación.
+      parameters:
+        - name: dia
+          in: query
+          description: Filtra por día de la semana
+          schema:
+            $ref: "#/components/schemas/Dia"
+        - name: instructor
+          in: query
+          description: Texto a buscar en el nombre del instructor
+          schema:
+            type: string
+          example: carl
+        - name: conCupo
+          in: query
+          description: true devuelve solo clases con cupos libres; false, solo las llenas
+          schema:
+            type: boolean
+          example: true
+        - name: sort
+          in: query
+          description: Orden. El prefijo "-" indica descendente
+          schema:
+            type: string
+            enum: [horario, -horario, nombre, -nombre]
+          example: horario
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/Limit"
       responses:
         "200":
-          description: Lista de clases
+          description: Página de clases
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Clase"
+                $ref: "#/components/schemas/PaginatedClases"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "500":
           $ref: "#/components/responses/InternalError"
     post:
@@ -222,7 +313,10 @@ paths:
     put:
       tags: [Clases]
       summary: Modificar una clase
-      description: Se puede enviar solo los campos a cambiar, pero al menos uno.
+      description: >-
+        Se puede enviar solo los campos a cambiar, pero al menos uno.
+        Si cambia cupoMaximo, no puede ser menor a los inscriptos activos y
+        cuposDisponibles se recalcula como cupoMaximo menos los inscriptos activos.
       requestBody:
         required: true
         content:
@@ -249,11 +343,20 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "409":
+          description: El nuevo cupo es menor a los inscriptos activos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CUPO_INVALIDO, message: El cupo máximo no puede ser menor a los inscriptos activos (2) }
         "500":
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [Clases]
       summary: Borrar una clase
+      description: No se puede borrar una clase con inscripciones activas.
       responses:
         "204":
           description: Clase borrada
@@ -267,6 +370,194 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "409":
+          description: La clase tiene inscripciones activas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CLASE_CON_INSCRIPCIONES, message: No se puede borrar una clase con inscripciones activas }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /clases/{id}/socios:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Clases]
+      summary: Socios inscriptos en la clase
+      description: Devuelve los socios con una inscripción activa en la clase.
+      responses:
+        "200":
+          description: Lista de socios (puede estar vacía)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Socio"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La clase no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /inscripciones:
+    get:
+      tags: [Inscripciones]
+      summary: Listar inscripciones
+      parameters:
+        - name: socioId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+        - name: claseId
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          example: 2
+        - name: estado
+          in: query
+          schema:
+            $ref: "#/components/schemas/EstadoInscripcion"
+      responses:
+        "200":
+          description: Lista de inscripciones
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Inscripcion"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Inscripciones]
+      summary: Inscribir un socio a una clase
+      description: >-
+        Crea la inscripción y descuenta un cupo de la clase. Dispara el evento inscripcion.creada
+        y, si la clase queda con pocos cupos, clase.cupoBajo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InscripcionCreate"
+            example:
+              socioId: 1
+              claseId: 2
+      responses:
+        "201":
+          description: Inscripción creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inscripcion"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: El socio o la clase no existen
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                socioNoExiste:
+                  value:
+                    error: { code: SOCIO_NOT_FOUND, message: No existe un socio con ese id }
+                claseNoExiste:
+                  value:
+                    error: { code: CLASE_NOT_FOUND, message: No existe una clase con ese id }
+        "409":
+          description: No se cumple una regla de negocio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              examples:
+                socioInactivo:
+                  value:
+                    error: { code: SOCIO_INACTIVO, message: El socio está inactivo y no puede inscribirse }
+                yaInscripto:
+                  value:
+                    error: { code: YA_INSCRIPTO, message: El socio ya está inscripto en esa clase }
+                sinCupo:
+                  value:
+                    error: { code: CLASE_SIN_CUPO, message: La clase no tiene cupos disponibles }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /inscripciones/{id}:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    get:
+      tags: [Inscripciones]
+      summary: Obtener una inscripción por id
+      responses:
+        "200":
+          description: Inscripción encontrada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inscripcion"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La inscripción no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: INSCRIPCION_NOT_FOUND, message: No existe una inscripción con ese id }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /inscripciones/{id}/cancelar:
+    parameters:
+      - $ref: "#/components/parameters/IdPath"
+    patch:
+      tags: [Inscripciones]
+      summary: Cancelar una inscripción
+      description: Pasa la inscripción a "cancelada" y devuelve un cupo a la clase.
+      responses:
+        "200":
+          description: Inscripción cancelada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Inscripcion"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: La inscripción no existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: INSCRIPCION_NOT_FOUND, message: No existe una inscripción con ese id }
+        "409":
+          description: La inscripción ya estaba cancelada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: INSCRIPCION_YA_CANCELADA, message: La inscripción ya estaba cancelada }
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -281,8 +572,125 @@ components:
         type: integer
         minimum: 1
       example: 1
+    Page:
+      name: page
+      in: query
+      description: Número de página (empieza en 1)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      description: Cantidad de resultados por página
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
 
   schemas:
+    PaginationMeta:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 10
+        total:
+          type: integer
+          description: Cantidad total de resultados antes de paginar
+          example: 3
+        totalPages:
+          type: integer
+          example: 1
+
+    PaginatedSocios:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Socio"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    PaginatedClases:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Clase"
+        meta:
+          $ref: "#/components/schemas/PaginationMeta"
+
+    EstadoInscripcion:
+      type: string
+      enum: [activa, cancelada]
+      example: activa
+
+    Inscripcion:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        socioId:
+          type: integer
+          example: 1
+        claseId:
+          type: integer
+          example: 2
+        fechaInscripcion:
+          type: string
+          format: date-time
+          example: "2026-10-28T21:46:50.155Z"
+        estado:
+          $ref: "#/components/schemas/EstadoInscripcion"
+        socio:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+              example: 1
+            nombre:
+              type: string
+              example: Lucía
+            apellido:
+              type: string
+              example: Fernández
+        clase:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+              example: 2
+            nombre:
+              type: string
+              example: Spinning
+            dia:
+              $ref: "#/components/schemas/Dia"
+            horario:
+              type: string
+              example: "19:00"
+
+    InscripcionCreate:
+      type: object
+      required: [socioId, claseId]
+      properties:
+        socioId:
+          type: integer
+          minimum: 1
+        claseId:
+          type: integer
+          minimum: 1
+
     Error:
       type: object
       properties:
