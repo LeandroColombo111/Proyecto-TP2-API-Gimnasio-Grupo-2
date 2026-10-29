@@ -3,7 +3,7 @@
 ### Health
 GET {{baseUrl}}/health
 
-### Ruta inexistente (404 ROUTE_NOT_FOUND)
+### Ruta inexistente
 GET {{baseUrl}}/nada
 
 ########## SOCIOS ##########
@@ -14,13 +14,13 @@ GET {{baseUrl}}/socios
 ### Obtener socio por id
 GET {{baseUrl}}/socios/1
 
-### Socio inexistente (404 SOCIO_NOT_FOUND)
+### Socio inexistente
 GET {{baseUrl}}/socios/999
 
-### Id inválido (400)
+### Id inválido
 GET {{baseUrl}}/socios/abc
 
-### Crear socio (201)
+### Crear socio
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
@@ -32,7 +32,7 @@ Content-Type: application/json
   "telefono": "1155550010"
 }
 
-### Crear socio sin teléfono (201, activo=true por defecto)
+### Crear socio sin teléfono
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
@@ -43,7 +43,7 @@ Content-Type: application/json
   "dni": "34555666"
 }
 
-### Email duplicado (409 EMAIL_DUPLICADO)
+### Email duplicado
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
@@ -54,7 +54,7 @@ Content-Type: application/json
   "dni": "40000001"
 }
 
-### DNI duplicado (409 DNI_DUPLICADO)
+### DNI duplicado
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
@@ -65,13 +65,13 @@ Content-Type: application/json
   "dni": "30123456"
 }
 
-### Body vacío (400 VALIDATION_ERROR)
+### Body vacío
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
 {}
 
-### Email y DNI inválidos (400)
+### Email y DNI inválidos
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
@@ -82,13 +82,13 @@ Content-Type: application/json
   "dni": "12"
 }
 
-### JSON mal formado (400 INVALID_JSON)
+### JSON mal formado
 POST {{baseUrl}}/socios
 Content-Type: application/json
 
 { "nombre": "Julia", }
 
-### Modificar socio (200)
+### Modificar socio
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
@@ -96,7 +96,7 @@ Content-Type: application/json
   "telefono": "1155559999"
 }
 
-### Modificar conservando su propio email (200, no es duplicado)
+### Modificar conservando su propio email
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
@@ -104,7 +104,7 @@ Content-Type: application/json
   "email": "lucia.fernandez@mail.com"
 }
 
-### Modificar con el email de otro socio (409 EMAIL_DUPLICADO)
+### Modificar con el email de otro socio
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
@@ -112,7 +112,7 @@ Content-Type: application/json
   "email": "martin.gomez@mail.com"
 }
 
-### Modificar con el DNI de otro socio (409 DNI_DUPLICADO)
+### Modificar con el DNI de otro socio
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
@@ -120,13 +120,13 @@ Content-Type: application/json
   "dni": "32456789"
 }
 
-### Modificar sin campos (400)
+### Modificar sin campos
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
 {}
 
-### Modificar con campo desconocido (400)
+### Modificar con campo desconocido
 PUT {{baseUrl}}/socios/1
 Content-Type: application/json
 
@@ -134,7 +134,7 @@ Content-Type: application/json
   "edad": 30
 }
 
-### Modificar socio inexistente (404)
+### Modificar socio inexistente
 PUT {{baseUrl}}/socios/999
 Content-Type: application/json
 
@@ -142,10 +142,10 @@ Content-Type: application/json
   "nombre": "Nadie"
 }
 
-### Borrar socio (204)
+### Borrar socio
 DELETE {{baseUrl}}/socios/3
 
-### Borrar socio inexistente (404)
+### Borrar socio inexistente
 DELETE {{baseUrl}}/socios/999
 
 ########## CLASES ##########
@@ -156,13 +156,13 @@ GET {{baseUrl}}/clases
 ### Obtener clase por id
 GET {{baseUrl}}/clases/2
 
-### Clase inexistente (404 CLASE_NOT_FOUND)
+### Clase inexistente
 GET {{baseUrl}}/clases/999
 
-### Id inválido (400)
+### Id inválido
 GET {{baseUrl}}/clases/abc
 
-### Crear clase (201, cuposDisponibles = cupoMaximo)
+### Crear clase
 POST {{baseUrl}}/clases
 Content-Type: application/json
 
@@ -174,7 +174,7 @@ Content-Type: application/json
   "cupoMaximo": 12
 }
 
-### Día inválido (400)
+### Día inválido
 POST {{baseUrl}}/clases
 Content-Type: application/json
 
@@ -186,7 +186,7 @@ Content-Type: application/json
   "cupoMaximo": 12
 }
 
-### Horario inválido (400)
+### Horario inválido
 POST {{baseUrl}}/clases
 Content-Type: application/json
 
@@ -198,7 +198,7 @@ Content-Type: application/json
   "cupoMaximo": 12
 }
 
-### Cupo inválido (400)
+### Cupo inválido
 POST {{baseUrl}}/clases
 Content-Type: application/json
 
@@ -210,13 +210,13 @@ Content-Type: application/json
   "cupoMaximo": 0
 }
 
-### Body vacío (400)
+### Body vacío
 POST {{baseUrl}}/clases
 Content-Type: application/json
 
 {}
 
-### Modificar clase (200)
+### Modificar clase
 PUT {{baseUrl}}/clases/1
 Content-Type: application/json
 
@@ -224,7 +224,7 @@ Content-Type: application/json
   "horario": "09:00"
 }
 
-### Modificar cupo máximo (200, cuposDisponibles se recalcula)
+### Modificar cupo máximo
 PUT {{baseUrl}}/clases/1
 Content-Type: application/json
 
@@ -232,7 +232,7 @@ Content-Type: application/json
   "cupoMaximo": 20
 }
 
-### cuposDisponibles no se puede enviar (400)
+### cuposDisponibles no se puede enviar
 PUT {{baseUrl}}/clases/1
 Content-Type: application/json
 
@@ -240,7 +240,7 @@ Content-Type: application/json
   "cuposDisponibles": 5
 }
 
-### Modificar clase inexistente (404)
+### Modificar clase inexistente
 PUT {{baseUrl}}/clases/999
 Content-Type: application/json
 
@@ -248,46 +248,46 @@ Content-Type: application/json
   "nombre": "Nada"
 }
 
-### Borrar clase (204)
+### Borrar clase
 DELETE {{baseUrl}}/clases/3
 
-### Borrar clase inexistente (404)
+### Borrar clase inexistente
 DELETE {{baseUrl}}/clases/999
 
 ########## FILTROS, ORDEN Y PAGINACIÓN ##########
 
-### Socios paginados y ordenados (200, data + meta)
+### Socios paginados y ordenados
 GET {{baseUrl}}/socios?limit=1&page=2&sort=-apellido
 
-### Socios activos que matchean el texto (200)
+### Socios activos que matchean el texto
 GET {{baseUrl}}/socios?activo=true&q=gom
 
-### Socios inactivos (200)
+### Socios inactivos
 GET {{baseUrl}}/socios?activo=false
 
-### page inválida (400)
+### page inválida
 GET {{baseUrl}}/socios?page=0
 
-### sort inválido (400)
+### sort inválido
 GET {{baseUrl}}/socios?sort=edad
 
-### limit mayor al máximo (400)
+### limit mayor al máximo
 GET {{baseUrl}}/socios?limit=101
 
-### Clases con cupo, ordenadas por horario descendente (200)
+### Clases con cupo, ordenadas por horario descendente
 GET {{baseUrl}}/clases?conCupo=true&sort=-horario&limit=2
 
-### Clases de un día y un instructor (200)
+### Clases de un día y un instructor
 GET {{baseUrl}}/clases?dia=lunes&instructor=carl
 
-### Día inválido (400)
+### Día inválido
 GET {{baseUrl}}/clases?dia=domingo
 
 ########## INSCRIPCIONES ##########
 # Spinning (clase 2) tiene cupo 2; el socio 3 está inactivo.
 # Reiniciar el server para volver a los datos semilla.
 
-### Inscribir socio 1 en Spinning (201, cupo baja a 1; dispara bienvenida y alerta de cupo bajo)
+### Inscribir socio 1 en Spinning
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -296,7 +296,7 @@ Content-Type: application/json
   "claseId": 2
 }
 
-### Ya inscripto (409 YA_INSCRIPTO)
+### Ya inscripto
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -305,7 +305,7 @@ Content-Type: application/json
   "claseId": 2
 }
 
-### Inscribir socio 2 en Spinning (201, cupo baja a 0)
+### Inscribir socio 2 en Spinning
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -314,7 +314,7 @@ Content-Type: application/json
   "claseId": 2
 }
 
-### Sin cupo: el socio 4 se crea antes con POST /socios (409 CLASE_SIN_CUPO)
+### Sin cupo: el socio 4 se crea antes con POST /socios
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -323,7 +323,7 @@ Content-Type: application/json
   "claseId": 2
 }
 
-### Socio inactivo (409 SOCIO_INACTIVO)
+### Socio inactivo
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -332,7 +332,7 @@ Content-Type: application/json
   "claseId": 1
 }
 
-### Socio inexistente (404 SOCIO_NOT_FOUND)
+### Socio inexistente
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -341,7 +341,7 @@ Content-Type: application/json
   "claseId": 1
 }
 
-### Clase inexistente (404 CLASE_NOT_FOUND)
+### Clase inexistente
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -350,7 +350,7 @@ Content-Type: application/json
   "claseId": 999
 }
 
-### Body inválido (400)
+### Body inválido
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -364,36 +364,36 @@ GET {{baseUrl}}/inscripciones
 ### Filtrar por clase y estado
 GET {{baseUrl}}/inscripciones?claseId=2&estado=activa
 
-### Estado inválido (400)
+### Estado inválido
 GET {{baseUrl}}/inscripciones?estado=otra
 
 ### Obtener inscripción por id
 GET {{baseUrl}}/inscripciones/1
 
-### Inscripción inexistente (404 INSCRIPCION_NOT_FOUND)
+### Inscripción inexistente
 GET {{baseUrl}}/inscripciones/999
 
 ########## RELACIÓN N A N Y REGLAS CRUZADAS ##########
 
-### Clases del socio 1 (200)
+### Clases del socio 1
 GET {{baseUrl}}/socios/1/clases
 
-### Socios de la clase 2 (200)
+### Socios de la clase 2
 GET {{baseUrl}}/clases/2/socios
 
-### Socio inexistente (404)
+### Socio inexistente
 GET {{baseUrl}}/socios/999/clases
 
-### Clase inexistente (404)
+### Clase inexistente
 GET {{baseUrl}}/clases/999/socios
 
-### Borrar socio con inscripción activa (409 SOCIO_CON_INSCRIPCIONES)
+### Borrar socio con inscripción activa
 DELETE {{baseUrl}}/socios/1
 
-### Borrar clase con inscripciones activas (409 CLASE_CON_INSCRIPCIONES)
+### Borrar clase con inscripciones activas
 DELETE {{baseUrl}}/clases/2
 
-### Bajar el cupo por debajo de los inscriptos (409 CUPO_INVALIDO)
+### Bajar el cupo por debajo de los inscriptos
 PUT {{baseUrl}}/clases/2
 Content-Type: application/json
 
@@ -401,7 +401,7 @@ Content-Type: application/json
   "cupoMaximo": 1
 }
 
-### Subir el cupo (200, cuposDisponibles = cupoMaximo - inscriptos)
+### Subir el cupo
 PUT {{baseUrl}}/clases/2
 Content-Type: application/json
 
@@ -409,20 +409,18 @@ Content-Type: application/json
   "cupoMaximo": 5
 }
 
-### Cancelar inscripción (200, el cupo vuelve)
+### Cancelar inscripción
 PATCH {{baseUrl}}/inscripciones/1/cancelar
 
-### Cancelar de nuevo (409 INSCRIPCION_YA_CANCELADA)
+### Cancelar de nuevo
 PATCH {{baseUrl}}/inscripciones/1/cancelar
 
-### Cancelar inscripción inexistente (404)
+### Cancelar inscripción inexistente
 PATCH {{baseUrl}}/inscripciones/999/cancelar
 
 ########## EVENTOS ##########
-# Mirar la consola del server (bienvenida) y el archivo alerts.log (cupo bajo).
-# Umbral de cupo bajo: CUPO_BAJO_THRESHOLD (por defecto 2).
 
-### Inscripción que NO dispara cupo bajo: Yoga tiene 15 cupos (solo bienvenida)
+### Inscripción en Yoga
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -431,7 +429,7 @@ Content-Type: application/json
   "claseId": 3
 }
 
-### Inscripción que SÍ dispara cupo bajo: Spinning queda con 1 cupo (bienvenida + alerta)
+### Inscripción en Spinning
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
@@ -440,7 +438,7 @@ Content-Type: application/json
   "claseId": 2
 }
 
-### Inscripción fallida: socio inexistente (404, no se notifica nada)
+### Inscripción con socio inexistente
 POST {{baseUrl}}/inscripciones
 Content-Type: application/json
 
