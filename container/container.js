@@ -23,6 +23,13 @@ async function buildContainer() {
   const clasesDao = getClasesDao();
   const inscripcionesDao = getInscripcionesDao();
 
+  // Los DAO de Sequelize tienen init() (crea las tablas y carga datos de ejemplo); los de memoria no lo necesitan
+  for (const dao of [sociosDao, clasesDao, inscripcionesDao]) {
+    if (typeof dao.init === "function") {
+      await dao.init();
+    }
+  }
+
   // 2. Bus de eventos, notificadores y listeners
   const events = createEventBus();
   const notifier = getNotifier(NOTIFIER_TYPE, "notifications.log");
