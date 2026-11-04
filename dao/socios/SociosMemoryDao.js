@@ -2,7 +2,7 @@ import { ordenar, paginar } from "../memoryUtils.js";
 
 /**
  * DAO de Socios en memoria.
- * Todos los métodos son async para mantener la misma firma que tendrá el DAO de Sequelize.
+ * Todos los métodos son async para mantener la misma firma que tiene el DAO de Sequelize.
  */
 class SociosMemoryDao {
   // Campos privados: nadie fuera de la clase puede tocar el array directamente
