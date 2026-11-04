@@ -114,7 +114,9 @@ Al arrancar, los DAO en memoria traen datos de ejemplo. Spinning tiene cupo 2 a 
 | Socios | 1 Lucía Fernández (activa), 2 Martín Gómez (activo), 3 Sofía Ramírez (**inactiva**) |
 | Clases | 1 Funcional (lunes 08:00, cupo 10), 2 Spinning (miércoles 19:00, **cupo 2**), 3 Yoga (viernes 18:00, cupo 15) |
 
-Los datos viven en memoria: al reiniciar el servidor vuelven a estos valores.
+Con `PERSISTENCE_TYPE=memory` los datos viven en memoria: al reiniciar el servidor vuelven a estos valores. Con
+`sequelize` se cargan en la base solo si la tabla está vacía y después **persisten** (para volver a estos valores,
+borrar `database.sqlite`).
 
 ## Trampa conocida: `req.query` en Express 5
 
@@ -133,19 +135,35 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 |---|---|---|
 | 1 | Base del proyecto, Swagger, CRUD de Socios y Clases en memoria | Hecho |
 | 2 | Inscripciones, reglas de negocio, relación N a N, filtros y paginación, eventos | Hecho |
-| 3 | Persistencia con Sequelize + SQLite, transacción, paridad con memoria | Pendiente |
+| 3 | Persistencia con Sequelize + SQLite, transacción, paridad con memoria | Hecho |
 | 4 | JWT, hash de contraseñas, tests de casos de uso | Pendiente |
 | 5 | Swagger y README completos, auditoría contra la consigna, ensayo de defensa | Pendiente |
 
-## Sprint 3: lo que va a cambiar
+## Sprint 3: cómo quedó la persistencia
 
-- Segundo DAO por entidad con la **misma interfaz** que el de memoria (`dao/*/…SequelizeDao.js`) y modelos en
-  `dao/models/` con las asociaciones centralizadas en `dao/models/index.js`.
-- `dao/daoFactory.js` elige según `PERSISTENCE_TYPE` (`memory` | `sequelize`). Hoy `sequelize` lanza un error
-  explícito.
-- Los DAO siguen devolviendo **objetos planos**. Casos de uso, controladores y rutas **no se tocan**.
-- `inscribir` y `cancelar` pasan a una transacción (crear/actualizar la inscripción y ajustar el cupo juntos).
-- Ambos modos deben responder **igual** (misma forma y mismos códigos): se verifica con un script de paridad.
+- Cada entidad tiene dos DAO con la **misma interfaz**: `dao/*/…MemoryDao.js` y `dao/*/…SequelizeDao.js`.
+  `dao/daoFactory.js` elige según `PERSISTENCE_TYPE` (`memory` | `sequelize`) y el contenedor llama a `init()` de
+  los DAO que lo tengan (crea las tablas y carga los datos de ejemplo si están vacías).
+- Los modelos están en `dao/models/` y las asociaciones **centralizadas** en `dao/models/index.js`:
+  `hasMany` / `belongsTo` para la relación 1 a N, y `belongsToMany` a través de `Inscripcion` para la N a N.
+- Los DAO devuelven **objetos planos**. Casos de uso, controladores y rutas **no se tocaron**.
+- `inscribir` y `cancelar` de `InscripcionesSequelizeDao` usan una **transacción** (la inscripción y el cupo se
+  escriben juntos; si algo falla, rollback).
+- Ambos modos responden **igual**: `npm run paridad` ejecuta 57 pedidos contra cada modo y `npm run paridad:comparar`
+  muestra las diferencias (hoy ninguna).
+
+### Detalles de Sequelize que hay que conocer
+
+- **Restricción única en la tabla intermedia:** por defecto `belongsToMany` crea `UNIQUE (socioId, claseId)` y un
+  socio no podría volver a inscribirse tras cancelar. Se evita con `through: { model, unique: false }` (la opción va
+  dentro de `through`, no en el `belongsToMany`).
+- **Sin claves foráneas** (`constraints: false`): una inscripción cancelada queda como historial aunque se borre el
+  socio o la clase, igual que en memoria (el `include` devuelve `socio: null` / `clase: null`).
+- **`sync()` una sola vez:** los tres DAO llaman a `sincronizar()` (`dao/models/index.js`), que guarda la promesa y
+  la reutiliza.
+- **Orden:** sin `sort` se ordena por `id`. Con `sort` se compara en minúsculas (`lower(campo)`), y el `id` desempata.
+- **Limitación conocida:** SQLite ordena por código de carácter, así que un apellido que empiece con tilde
+  ("Álvarez") queda después de la "z", mientras que el DAO en memoria usa `localeCompare("es")`.
 
 ## Sprint 4: lo que va a cambiar
 

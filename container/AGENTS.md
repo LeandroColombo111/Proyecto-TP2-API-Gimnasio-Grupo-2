@@ -20,7 +20,8 @@ También monta `GET /health` y `/api-docs`.
 ## Reglas
 - Acá se hace `new` de controladores y se llama a las factories. En ninguna otra capa.
 - Los notificadores se **crean acá** y se pasan a los listeners; el caso de uso nunca los conoce.
-- Si un DAO tiene un método `init` (Sequelize lo va a tener), se llama acá antes de armar los casos de uso.
+- Si un DAO tiene un método `init` (los de Sequelize lo tienen: crean las tablas y cargan datos de ejemplo), se
+  llama acá, antes de armar los casos de uso. Los DAO en memoria no lo necesitan.
 - No hay lógica de negocio ni de HTTP en este archivo: solo conexiones.
 
 ## Al agregar un recurso nuevo

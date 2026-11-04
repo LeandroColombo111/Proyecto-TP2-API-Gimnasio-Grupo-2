@@ -1,5 +1,25 @@
 # API Gimnasio
 
+## Persistencia
+
+Los datos se pueden guardar de dos maneras, que se eligen con la variable `PERSISTENCE_TYPE` del `.env`
+(hay que reiniciar el servidor al cambiarla):
+
+| `PERSISTENCE_TYPE` | Qué usa | Datos |
+|---|---|---|
+| `memory` | Arrays en memoria | Se pierden al reiniciar el servidor |
+| `sequelize` | Sequelize + SQLite, en el archivo de `DB_STORAGE` (por defecto `./database.sqlite`) | Persisten |
+
+Cada entidad (Socios, Clases, Inscripciones) tiene un DAO por modo, con la **misma interfaz**. Los casos de uso,
+los controladores y las rutas no cambian: solo cambia el DAO que arma `dao/daoFactory.js`. Los dos modos responden
+igual (misma forma y mismos códigos).
+
+- Con `sequelize`, al arrancar se crean las tablas y, si están vacías, se cargan los mismos datos de ejemplo que en memoria.
+- Para volver a los datos de ejemplo, apagar el servidor y borrar `database.sqlite`.
+- Inscribir y cancelar usan una **transacción**: la inscripción y el cupo de la clase se actualizan juntos, o no se
+  actualiza ninguno.
+- Para comprobar que los dos modos responden igual: `npm run paridad` y `npm run paridad:comparar` (ver `connection/AGENTS.md`).
+
 ## Eventos
 
 La aplicación usa un bus de eventos (`EventEmitter`, en `events/eventBus.js`). Los casos de uso **emiten**
