@@ -9,8 +9,8 @@ API REST de un gimnasio, hecha como TP Integrador de Taller de Programación 2 (
 **Clases** e **Inscripciones**. Un socio se inscribe a muchas clases y una clase tiene muchos socios
 (relación N a N a través de Inscripciones).
 
-**Stack:** Node.js (ES Modules) · Express 5 · Zod 4 · swagger-ui-express + yaml. Sin TypeScript y sin
-contenedores de DI (la inyección de dependencias es manual, con factories).
+**Stack:** Node.js (ES Modules) · Express 5 · Zod 4 · Sequelize + SQLite · swagger-ui-express + yaml. Sin
+TypeScript y sin contenedores de DI (la inyección de dependencias es manual, con factories).
 
 ## Comandos
 
@@ -18,6 +18,21 @@ contenedores de DI (la inyección de dependencias es manual, con factories).
 npm install        # instalar dependencias
 npm run dev        # servidor con recarga automática (usa .env)
 npm start          # servidor normal (usa .env)
+```
+
+Persistencia (se elige con `PERSISTENCE_TYPE` en el `.env`; hay que reiniciar el servidor):
+
+| Valor | Qué usa |
+|---|---|
+| `memory` | Arrays en memoria. Los datos se pierden al reiniciar |
+| `sequelize` | SQLite en el archivo de `DB_STORAGE` (por defecto `./database.sqlite`). Los datos persisten |
+
+Verificar que ambos modos responden igual (con el servidor levantado en cada modo y la base vacía):
+
+```bash
+npm run paridad -- http://localhost:8000 memory.json          # con PERSISTENCE_TYPE=memory
+npm run paridad -- http://localhost:8000 sequelize.json       # con PERSISTENCE_TYPE=sequelize (base nueva)
+npm run paridad:comparar -- memory.json sequelize.json        # muestra las diferencias (ninguna = OK)
 ```
 
 - El `.env` se crea a partir de `.env.example` y **no se versiona**.
@@ -34,8 +49,10 @@ routes/                   # Rutas + validaciones (una por recurso, más docsRout
 controllers/              # Traducen HTTP <-> casos de uso. Delgados, sin reglas de negocio
 usecases/                 # Reglas de negocio. Reciben sus dependencias por parámetro
   socios/ clases/ inscripciones/
-dao/                      # Acceso a datos (hoy: en memoria)
-  socios/ clases/ inscripciones/  daoFactory.js  memoryUtils.js
+connection/               # Conexión a la base de datos (Sequelize + SQLite)
+dao/                      # Acceso a datos: un DAO en memoria y uno con Sequelize por entidad
+  socios/ clases/ inscripciones/  daoFactory.js  memoryUtils.js  sequelizeUtils.js
+  models/                 # Modelos de Sequelize y asociaciones (index.js)
 schemas/                  # Schemas Zod (body, params y query)
 middlewares/              # validate, logger, errorHandler, notFound
 errors/AppError.js        # Error de dominio: code, message, statusCode, details
@@ -43,6 +60,7 @@ events/                   # Bus de eventos (EventEmitter) y nombres de eventos
 alerts/                   # Listeners: reaccionan a los eventos
 notifications/            # Notificadores (consola, archivo) y su factory
 docs/                     # openapi.yaml y documentación de la API
+scripts/                  # paridad.js y comparar.js: verifican que memory y sequelize respondan igual
 requests.http             # Casos de prueba manuales
 ```
 
@@ -69,7 +87,8 @@ comunes. Este archivo (la raíz) tiene lo transversal; los de las carpetas tiene
 | `routes/` | [`routes/AGENTS.md`](routes/AGENTS.md) |
 | `controllers/` | [`controllers/AGENTS.md`](controllers/AGENTS.md) |
 | `usecases/` (reglas de negocio) | [`usecases/AGENTS.md`](usecases/AGENTS.md) |
-| `dao/` (acceso a datos) | [`dao/AGENTS.md`](dao/AGENTS.md) |
+| `dao/` (acceso a datos y modelos) | [`dao/AGENTS.md`](dao/AGENTS.md) |
+| `connection/` y `scripts/` | [`connection/AGENTS.md`](connection/AGENTS.md) |
 | `schemas/` (Zod) | [`schemas/AGENTS.md`](schemas/AGENTS.md) |
 | `middlewares/` y `errors/` | [`middlewares/AGENTS.md`](middlewares/AGENTS.md) |
 | `container/` (armado de dependencias) | [`container/AGENTS.md`](container/AGENTS.md) |
@@ -99,7 +118,10 @@ Para entender **qué hace el negocio** (entidades, reglas, cupos), leer la secci
 **Cosas que suelen salir mal**
 - `req.query` en Express 5 no se puede reasignar: ver `middlewares/AGENTS.md`.
 - No hace falta `asyncHandler`: Express 5 captura los errores de los handlers `async`.
-- Los datos viven en memoria y se reinician con el servidor. Para repetir una prueba, reiniciar.
+- Con `PERSISTENCE_TYPE=memory` los datos se reinician con el servidor. Con `sequelize` **persisten** en el archivo
+  SQLite: para volver a los datos de ejemplo hay que borrar `database.sqlite` (con el servidor apagado).
+- `sequelize.sync()` crea las tablas que faltan pero **no modifica las que ya existen**: si se cambia un modelo,
+  hay que borrar el archivo de la base.
 - Hay un solo proceso en el puerto 8000: si el servidor "no cambia", puede haber otro viejo corriendo.
 - El proyecto se **defiende de forma oral**: priorizar código simple y fácil de explicar sobre soluciones ingeniosas.
 
@@ -134,9 +156,10 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 - Zod valida la **forma** del dato. Lo que requiere consultar datos (ej: email duplicado) va en el caso de uso.
 
 **DAO**
-- Cada entidad tiene DAO con la **misma interfaz** (hoy en memoria; el segundo, con Sequelize, está planificado).
+- Cada entidad tiene **dos DAO con la misma interfaz**: en memoria y con Sequelize. Los dos tienen que responder
+  igual (misma forma y mismos códigos): se verifica con `npm run paridad`.
 - Los DAO devuelven **objetos planos y copias**, nunca el objeto interno ni instancias de un ORM.
-- Todos los métodos son `async`, para no cambiar la firma cuando llegue la base de datos.
+- Todos los métodos son `async`, porque los de Sequelize lo son: así los dos DAO tienen la misma firma.
 
 **Eventos**
 - El caso de uso **emite** el evento solo después de que la operación se concretó. Un **listener en `alerts/`**
@@ -187,7 +210,8 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 |---|---|---|
 | `PORT` | `8000` | Puerto del servidor |
 | `NODE_ENV` | `development` | Entorno |
-| `PERSISTENCE_TYPE` | `memory` | Tipo de persistencia (`memory`; `sequelize` está planificado) |
+| `PERSISTENCE_TYPE` | `memory` | Tipo de persistencia: `memory` o `sequelize` |
+| `DB_STORAGE` | `./database.sqlite` | Archivo de SQLite (solo con `sequelize`). No se versiona |
 | `CUPO_BAJO_THRESHOLD` | `2` | Cupos libres a partir de los cuales se emite `clase.cupoBajo` |
 | `NOTIFIER_TYPE` | `console` | Notificador de la bienvenida (`console` o `file`) |
 | `ALERT_NOTIFIER_TYPE` | `file` | Notificador de las alertas (`console` o `file`) |
@@ -202,7 +226,7 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 | Filtros, orden y paginación | Hecho |
 | Eventos `inscripcion.creada` y `clase.cupoBajo` | Hecho |
 | Swagger en `/api-docs` | Hecho (cubre los endpoints actuales) |
-| Persistencia con Sequelize + transacción | Planificado |
+| Persistencia con Sequelize + SQLite, transacción al inscribir/cancelar | Hecho (paridad verificada con `npm run paridad`) |
 | JWT y hash de contraseñas | Planificado |
 | Tests de casos de uso | Planificado |
 | README completo | Planificado |

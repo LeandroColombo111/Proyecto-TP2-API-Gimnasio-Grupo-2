@@ -64,14 +64,14 @@ class InscripcionesMemoryDao {
   async getClasesActivasBySocio(socioId) {
     const activas = this.#inscripciones.filter((i) => i.socioId === Number(socioId) && i.estado === "activa");
     const clases = await Promise.all(activas.map((i) => this.#clasesDao.getById(i.claseId)));
-    return clases.filter(Boolean);
+    return clases.filter(Boolean).sort((a, b) => a.id - b.id); // por id, como el DAO de Sequelize
   }
 
   // Socios con una inscripción activa en la clase
   async getSociosActivosByClase(claseId) {
     const activas = this.#inscripciones.filter((i) => i.claseId === Number(claseId) && i.estado === "activa");
     const socios = await Promise.all(activas.map((i) => this.#sociosDao.getById(i.socioId)));
-    return socios.filter(Boolean);
+    return socios.filter(Boolean).sort((a, b) => a.id - b.id); // por id, como el DAO de Sequelize
   }
 
   // Crea la inscripción Y resta 1 al cupo de la clase. Devuelve null si la clase no tiene cupo.
