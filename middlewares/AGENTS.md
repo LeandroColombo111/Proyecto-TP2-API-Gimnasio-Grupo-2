@@ -9,6 +9,7 @@
 | `validate.js` | `validate(schema, target)`, `validateParams`, `validateQuery`: validan con Zod |
 | `errorHandler.js` | **Único** manejador de errores: arma `{ error: { code, message, details? } }` |
 | `notFound.js` | 404 `ROUTE_NOT_FOUND` para rutas inexistentes |
+| `requireAuth.js` | `createRequireAuth(tokenService)`: exige `Authorization: Bearer <token>` válido (401 si no) |
 | `logger.js` | Registra método, url, status y duración al terminar cada request |
 | `../errors/AppError.js` | Error de dominio: `code`, `message`, `statusCode`, `details` |
 
@@ -23,6 +24,14 @@
 - `validate` convierte los errores de Zod en `AppError("VALIDATION_ERROR", ..., 400, details)`, con
   `details: [{ field, message }]`. Si el problema es del objeto completo, `field` vale `(root)`.
 - Los middlewares no contienen reglas de negocio.
+
+## `requireAuth`
+- Es una **factory**: recibe el `tokenService` por parámetro y no importa `jsonwebtoken`. Se crea en
+  `container/container.js` y se pasa a los routers.
+- Sin encabezado `Authorization: Bearer <token>` → `401 UNAUTHORIZED`. Token alterado, falso o vencido →
+  `401 TOKEN_INVALIDO`. Si es válido, deja los datos del token en `req.usuario` y sigue.
+- Va **primero** en la cadena de las rutas que modifican datos (antes de validar el body). Detalle del flujo en
+  `auth/AGENTS.md`.
 
 ## Trampa crítica: `req.query` en Express 5
 `req.query` es un **getter** que se recalcula en cada acceso: `Object.assign(req.query, datos)` no guarda nada y

@@ -9,8 +9,9 @@ API REST de un gimnasio, hecha como TP Integrador de Taller de Programación 2 (
 **Clases** e **Inscripciones**. Un socio se inscribe a muchas clases y una clase tiene muchos socios
 (relación N a N a través de Inscripciones).
 
-**Stack:** Node.js (ES Modules) · Express 5 · Zod 4 · Sequelize + SQLite · swagger-ui-express + yaml. Sin
-TypeScript y sin contenedores de DI (la inyección de dependencias es manual, con factories).
+**Stack:** Node.js (ES Modules) · Express 5 · Zod 4 · Sequelize + SQLite · JWT (`jsonwebtoken`) + `bcryptjs` ·
+swagger-ui-express + yaml. Sin TypeScript y sin contenedores de DI (la inyección de dependencias es manual, con
+factories).
 
 ## Comandos
 
@@ -36,6 +37,8 @@ npm run paridad:comparar -- memory.json sequelize.json        # muestra las dife
 ```
 
 - El `.env` se crea a partir de `.env.example` y **no se versiona**.
+- Los endpoints que modifican datos piden un token: `POST /auth/login` con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del
+  `.env` devuelve el token, y se envía como `Authorization: Bearer <token>` (en Swagger, botón **Authorize**).
 - Swagger UI: http://localhost:8000/api-docs
 - Pruebas manuales: `requests.http` (extensión REST Client de VS Code).
 
@@ -48,13 +51,14 @@ container/container.js    # Composition Root: arma DAOs -> casos de uso -> contr
 routes/                   # Rutas + validaciones (una por recurso, más docsRoutes)
 controllers/              # Traducen HTTP <-> casos de uso. Delgados, sin reglas de negocio
 usecases/                 # Reglas de negocio. Reciben sus dependencias por parámetro
-  socios/ clases/ inscripciones/
+  socios/ clases/ inscripciones/ auth/
 connection/               # Conexión a la base de datos (Sequelize + SQLite)
 dao/                      # Acceso a datos: un DAO en memoria y uno con Sequelize por entidad
-  socios/ clases/ inscripciones/  daoFactory.js  memoryUtils.js  sequelizeUtils.js
+  socios/ clases/ inscripciones/ usuarios/  daoFactory.js  memoryUtils.js  sequelizeUtils.js
   models/                 # Modelos de Sequelize y asociaciones (index.js)
 schemas/                  # Schemas Zod (body, params y query)
-middlewares/              # validate, logger, errorHandler, notFound
+middlewares/              # validate, requireAuth, logger, errorHandler, notFound
+auth/                     # Servicios de JWT (tokenService) y de contraseñas (passwordService)
 errors/AppError.js        # Error de dominio: code, message, statusCode, details
 events/                   # Bus de eventos (EventEmitter) y nombres de eventos
 alerts/                   # Listeners: reaccionan a los eventos
@@ -91,6 +95,7 @@ comunes. Este archivo (la raíz) tiene lo transversal; los de las carpetas tiene
 | `connection/` y `scripts/` | [`connection/AGENTS.md`](connection/AGENTS.md) |
 | `schemas/` (Zod) | [`schemas/AGENTS.md`](schemas/AGENTS.md) |
 | `middlewares/` y `errors/` | [`middlewares/AGENTS.md`](middlewares/AGENTS.md) |
+| `auth/` (JWT y contraseñas; el flujo de login) | [`auth/AGENTS.md`](auth/AGENTS.md) |
 | `container/` (armado de dependencias) | [`container/AGENTS.md`](container/AGENTS.md) |
 | `events/` (flujo completo de eventos) | [`events/AGENTS.md`](events/AGENTS.md) |
 | `alerts/` (listeners) | [`alerts/AGENTS.md`](alerts/AGENTS.md) |
@@ -148,7 +153,15 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
   en un caso de uso.
 - Hay un único `errorHandler` y un único `notFound`. El formato de error es siempre
   `{ error: { code, message, details? } }`.
-- Códigos HTTP usados: 200, 201, 204, 400, 404, 409, 500.
+- Códigos HTTP usados: 200, 201, 204, 400, 401, 404, 409, 500.
+
+**Autenticación**
+- Los endpoints que **modifican datos** (`POST`, `PUT`, `PATCH`, `DELETE`) llevan `requireAuth` como **primer**
+  middleware de la ruta. Los `GET` y `POST /auth/login` son públicos.
+- Solo `auth/` importa `jsonwebtoken` y `bcryptjs`: el resto recibe los servicios por parámetro.
+- Las contraseñas se guardan **hasheadas**. El hash no sale del DAO salvo para el login (`getByEmailConHash`) y
+  ninguna respuesta lo incluye.
+- El secreto del JWT y las credenciales del admin salen de `config/config.js`. Nunca valores reales en el repo.
 
 **Validación**
 - Todo dato de entrada (body, params y query) se valida con Zod usando `validate`, `validateParams` o
@@ -187,6 +200,8 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 4. **DAO:** si hace falta un método nuevo, agregarlo con la misma interfaz en todos los DAO del recurso.
 5. **Controlador:** un método arrow corto que llame al caso de uso y responda con el status correcto.
 6. **Ruta** en `routes/` con `validate...` y registrar todo en `container/container.js` si es un recurso nuevo.
+   Si modifica datos (`POST`, `PUT`, `PATCH`, `DELETE`), lleva `requireAuth` primero y se documenta como protegida
+   (ver `auth/AGENTS.md`).
 7. **Pruebas manuales** en `requests.http` (un caso de éxito y uno por cada error posible).
 8. **Documentación:** actualizar `docs/API_DOCUMENTATION.md` y, si cambia el formato, `docs/API_RESPONSE_STRUCTURE.md`.
 
@@ -215,6 +230,10 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 | `CUPO_BAJO_THRESHOLD` | `2` | Cupos libres a partir de los cuales se emite `clase.cupoBajo` |
 | `NOTIFIER_TYPE` | `console` | Notificador de la bienvenida (`console` o `file`) |
 | `ALERT_NOTIFIER_TYPE` | `file` | Notificador de las alertas (`console` o `file`) |
+| `JWT_SECRET` | `secreto-solo-para-desarrollo` | Secreto que firma los tokens. En `production` es obligatorio |
+| `JWT_EXPIRES_IN` | `1h` | Duración del token |
+| `ADMIN_EMAIL` | `admin@gimnasio.com` | Email del administrador que se crea al arrancar |
+| `ADMIN_PASSWORD` | sin valor | Contraseña del administrador. Sin ella no se crea ningún usuario. Nunca el valor real en el repo |
 
 ## Estado del proyecto
 
@@ -227,13 +246,15 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 | Eventos `inscripcion.creada` y `clase.cupoBajo` | Hecho |
 | Swagger en `/api-docs` | Hecho (cubre los endpoints actuales) |
 | Persistencia con Sequelize + SQLite, transacción al inscribir/cancelar | Hecho (paridad verificada con `npm run paridad`) |
-| JWT y hash de contraseñas | Planificado |
+| JWT (login y escrituras protegidas) y hash de contraseñas | Hecho |
 | Tests de casos de uso | Planificado |
 | README completo | Planificado |
 
 ## Qué NO hacer
 
 - No importar un DAO dentro de un controlador o de un caso de uso.
+- No importar `jsonwebtoken` ni `bcryptjs` fuera de `auth/`.
+- No devolver ni loguear el hash de una contraseña ni el token de otro usuario.
 - No poner reglas de negocio en rutas, controladores o schemas de Zod.
 - No leer `process.env` fuera de `config/config.js`.
 - No responder errores con `res.status(...).json(...)` a mano: se lanza un `AppError`.

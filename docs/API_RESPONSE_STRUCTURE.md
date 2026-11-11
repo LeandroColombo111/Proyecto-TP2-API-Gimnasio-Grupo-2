@@ -141,19 +141,23 @@ El dato tiene la forma correcta, pero choca con el estado actual de los datos.
 |---|---|
 | `INTERNAL_ERROR` | Error no controlado |
 
-### Planificados (con JWT)
+### 401 — No autenticado
 
-| Status | Code | Cuándo |
-|---|---|---|
-| 401 | `CREDENCIALES_INVALIDAS` | Email o contraseña incorrectos en el login |
-| 401 | `UNAUTHORIZED` | Falta el token en un endpoint protegido |
-| 401 | `TOKEN_INVALIDO` | El token es inválido o expiró |
+| Code | Cuándo |
+|---|---|
+| `CREDENCIALES_INVALIDAS` | Email o contraseña incorrectos en `POST /auth/login` (el mismo error para los dos casos) |
+| `UNAUTHORIZED` | Falta el encabezado `Authorization: Bearer <token>` en un endpoint protegido |
+| `TOKEN_INVALIDO` | El token es inválido (firma incorrecta o alterado) o expiró |
+
+Los endpoints que modifican datos (`POST`, `PUT`, `PATCH` y `DELETE`) devuelven `401` antes de validar el body o de
+ejecutar cualquier regla de negocio.
 
 ## Cuál usar: 400, 404 o 409
 
 | Situación | Status |
 |---|---|
 | El dato no tiene la forma esperada (falta un campo, tipo incorrecto, formato inválido) | `400` |
+| Falta el token, es inválido o venció (o las credenciales del login son incorrectas) | `401` |
 | El recurso pedido no existe | `404` |
 | El dato es válido pero no se puede aplicar por el estado actual (duplicado, sin cupo, ya inscripto) | `409` |
 

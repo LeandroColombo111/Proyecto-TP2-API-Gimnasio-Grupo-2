@@ -17,6 +17,13 @@ demás. `buildContainer()` devuelve el router principal que monta `index.js`.
 ```
 También monta `GET /health` y `/api-docs`.
 
+## Autenticación en el contenedor
+- Acá se crean `tokenService` y `passwordService` (`auth/`) con la configuración de `config/config.js`, y
+  `requireAuth` a partir del `tokenService`.
+- `requireAuth` se pasa a los routers de socios, clases e inscripciones (`createXxxRouter(controller, requireAuth)`).
+- Después de inicializar los DAO y armar los casos de uso, se llama a `authUseCases.crearAdminInicial(...)` para
+  crear el administrador si no existe.
+
 ## Reglas
 - Acá se hace `new` de controladores y se llama a las factories. En ninguna otra capa.
 - Los notificadores se **crean acá** y se pasan a los listeners; el caso de uso nunca los conoce.

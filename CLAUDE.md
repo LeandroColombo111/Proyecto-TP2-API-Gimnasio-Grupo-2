@@ -56,6 +56,15 @@ el **estado del trabajo** y el **template de PR**.
 | `fechaInscripcion` | ISO 8601, la pone el sistema |
 | `estado` | `activa` o `cancelada` |
 
+**Usuario** — solo para autenticación (no tiene CRUD).
+
+| Campo | Notas |
+|---|---|
+| `id` | Lo asigna el DAO |
+| `email` | Único, en minúsculas |
+| `passwordHash` | Hash bcrypt de la contraseña. Nunca sale en una respuesta |
+| `rol` | `admin` |
+
 ## Relaciones
 
 ```
@@ -136,7 +145,7 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 | 1 | Base del proyecto, Swagger, CRUD de Socios y Clases en memoria | Hecho |
 | 2 | Inscripciones, reglas de negocio, relación N a N, filtros y paginación, eventos | Hecho |
 | 3 | Persistencia con Sequelize + SQLite, transacción, paridad con memoria | Hecho |
-| 4 | JWT, hash de contraseñas, tests de casos de uso | Pendiente |
+| 4 | JWT, hash de contraseñas, tests de casos de uso | JWT y hash: hecho. Tests de casos de uso: pendiente |
 | 5 | Swagger y README completos, auditoría contra la consigna, ensayo de defensa | Pendiente |
 
 ## Sprint 3: cómo quedó la persistencia
@@ -149,7 +158,7 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 - Los DAO devuelven **objetos planos**. Casos de uso, controladores y rutas **no se tocaron**.
 - `inscribir` y `cancelar` de `InscripcionesSequelizeDao` usan una **transacción** (la inscripción y el cupo se
   escriben juntos; si algo falla, rollback).
-- Ambos modos responden **igual**: `npm run paridad` ejecuta 57 pedidos contra cada modo y `npm run paridad:comparar`
+- Ambos modos responden **igual**: `npm run paridad` ejecuta 65 pedidos contra cada modo y `npm run paridad:comparar`
   muestra las diferencias (hoy ninguna).
 
 ### Detalles de Sequelize que hay que conocer
@@ -165,16 +174,28 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 - **Limitación conocida:** SQLite ordena por código de carácter, así que un apellido que empiece con tilde
   ("Álvarez") queda después de la "z", mientras que el DAO en memoria usa `localeCompare("es")`.
 
-## Sprint 4: lo que va a cambiar
+## Sprint 4: autenticación (hecho) y tests (pendiente)
 
-- `POST /auth/login` (público) que devuelve un token. Los `POST`, `PUT`, `PATCH` y `DELETE` de socios, clases e
-  inscripciones requieren `Authorization: Bearer <token>` mediante un middleware `requireAuth` reutilizable. Los
-  `GET` quedan públicos.
-- Las contraseñas se guardan **hasheadas**, nunca en texto plano. El mismo error (`CREDENCIALES_INVALIDAS`, 401)
-  sirve para email y contraseña incorrectos.
-- Las variables nuevas (`JWT_SECRET`, `JWT_EXPIRES_IN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`) van en `config/config.js`
-  y en `.env.example` con valores de ejemplo, **nunca los reales**.
-- Tests de los casos de uso usando DAOs en memoria como dobles (sin servidor ni base de datos).
+**Cómo quedó el JWT**
+- `POST /auth/login` (público) devuelve `{ token, expiresIn }`. Los `POST`, `PUT`, `PATCH` y `DELETE` de socios,
+  clases e inscripciones requieren `Authorization: Bearer <token>` mediante `middlewares/requireAuth.js`. Los `GET`
+  quedan públicos.
+- `auth/tokenService.js` (firmar y verificar con `jsonwebtoken`) y `auth/passwordService.js` (hashear y comparar con
+  `bcryptjs`, 10 rondas) se **inyectan** desde el contenedor: ningún caso de uso importa esas librerías.
+- Hay una entidad **Usuario** (`id`, `email`, `passwordHash`, `rol`) con DAO en memoria y con Sequelize
+  (`dao/usuarios/`), misma interfaz. El hash solo sale por `getByEmailConHash`, que usa el login; `save` devuelve el
+  usuario sin el hash.
+- Al arrancar, `usecases/auth/crearAdminInicial.js` crea el administrador (`ADMIN_EMAIL`, `ADMIN_PASSWORD`) si no
+  existe y la contraseña se guarda hasheada. Sin `ADMIN_PASSWORD` no se crea ningún usuario.
+- Errores 401: `CREDENCIALES_INVALIDAS` (login; **el mismo** para email inexistente y contraseña incorrecta),
+  `UNAUTHORIZED` (falta el token) y `TOKEN_INVALIDO` (inválido, alterado o vencido).
+- Variables nuevas en `config/config.js` y `.env.example` (con valores de ejemplo): `JWT_SECRET`, `JWT_EXPIRES_IN`,
+  `ADMIN_EMAIL`, `ADMIN_PASSWORD`. En `production` `JWT_SECRET` es obligatorio.
+- Flujo completo y reglas: `auth/AGENTS.md`.
+- `npm run paridad` ahora hace login primero y verifica también los `401` (65 pedidos iguales en ambos modos).
+
+**Pendiente del Sprint 4:** tests de los casos de uso usando DAOs en memoria como dobles (sin servidor ni base de
+datos), con el `code` y el `statusCode` del `AppError` verificados.
 
 ---
 

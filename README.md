@@ -1,5 +1,28 @@
 # API Gimnasio
 
+## Autenticación
+
+Los endpoints que **modifican datos** (`POST`, `PUT`, `PATCH` y `DELETE` de socios, clases e inscripciones) están
+protegidos con **JWT**. Los `GET` y el login son públicos.
+
+1. `POST /auth/login` con el email y la contraseña del administrador devuelve un `token`.
+2. Ese token se envía en cada pedido protegido: `Authorization: Bearer <token>`. En Swagger UI se carga una vez
+   con el botón **Authorize**.
+3. Sin token, o con uno inválido o vencido, la API responde `401`.
+
+- El usuario administrador se crea al arrancar con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del `.env`. La contraseña se
+  guarda **hasheada** con bcrypt: nunca en texto plano.
+- El token vence a las `JWT_EXPIRES_IN` (por defecto `1h`) y se firma con `JWT_SECRET`.
+- Los valores de `.env.example` son solo de ejemplo: cada integrante define los suyos en su `.env`, que no se
+  versiona.
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `JWT_SECRET` | `secreto-solo-para-desarrollo` | Secreto con el que se firman los tokens. En producción es obligatorio |
+| `JWT_EXPIRES_IN` | `1h` | Duración del token |
+| `ADMIN_EMAIL` | `admin@gimnasio.com` | Email del administrador inicial |
+| `ADMIN_PASSWORD` | sin valor | Contraseña del administrador inicial. Sin ella no se crea ningún usuario |
+
 ## Persistencia
 
 Los datos se pueden guardar de dos maneras, que se eligen con la variable `PERSISTENCE_TYPE` del `.env`

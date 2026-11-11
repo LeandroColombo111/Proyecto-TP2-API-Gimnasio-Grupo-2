@@ -12,6 +12,7 @@ del DAO que le **inyectan**, aplica las reglas y, si corresponde, **emite evento
 socios/          getSocios, getSocioById, createSocio, updateSocio, deleteSocio, getClasesDeSocio, makeSocioUseCases
 clases/          getClases, getClaseById, createClase, updateClase, deleteClase, getSociosDeClase, makeClaseUseCases
 inscripciones/   getInscripciones, getInscripcionById, inscribirSocio, cancelarInscripcion, makeInscripcionUseCases
+auth/            login, crearAdminInicial, makeAuthUseCases (reciben usuariosDao y los servicios de auth/)
 paginar.js       armarPagina: arma { data, meta } desde { items, total }
 ```
 
