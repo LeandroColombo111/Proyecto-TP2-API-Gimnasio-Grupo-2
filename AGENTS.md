@@ -40,6 +40,7 @@ npm run paridad:comparar -- memory.json sequelize.json        # muestra las dife
 - Los endpoints que modifican datos piden un token: `POST /auth/login` con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del
   `.env` devuelve el token, y se envía como `Authorization: Bearer <token>` (en Swagger, botón **Authorize**).
 - Swagger UI: http://localhost:8000/api-docs
+- Página de demo: http://localhost:8000 (`public/index.html`)
 - Pruebas manuales: `requests.http` (extensión REST Client de VS Code).
 
 ## Estructura del proyecto
@@ -64,6 +65,7 @@ events/                   # Bus de eventos (EventEmitter) y nombres de eventos
 alerts/                   # Listeners: reaccionan a los eventos
 notifications/            # Notificadores (consola, archivo) y su factory
 docs/                     # openapi.yaml y documentación de la API
+public/                   # index.html: página de demo (se abre en http://localhost:8000)
 scripts/                  # paridad.js y comparar.js: verifican que memory y sequelize respondan igual
 requests.http             # Casos de prueba manuales
 ```
@@ -101,6 +103,7 @@ comunes. Este archivo (la raíz) tiene lo transversal; los de las carpetas tiene
 | `alerts/` (listeners) | [`alerts/AGENTS.md`](alerts/AGENTS.md) |
 | `notifications/` (notificadores) | [`notifications/AGENTS.md`](notifications/AGENTS.md) |
 | `docs/` (OpenAPI y documentación) | [`docs/AGENTS.md`](docs/AGENTS.md) |
+| `public/` (página de demo) | [`public/AGENTS.md`](public/AGENTS.md) |
 
 Para entender **qué hace el negocio** (entidades, reglas, cupos), leer la sección "Modelo de dominio" de
 [`CLAUDE.md`](CLAUDE.md).

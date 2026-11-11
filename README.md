@@ -1,5 +1,14 @@
 # API Gimnasio
 
+## Página de demo
+
+Con el servidor levantado (`npm run dev`), la página http://localhost:8000 permite probar la API desde el navegador:
+iniciar sesión, ver clases y socios, crear y borrar socios, inscribir y cancelar. Cuando la API responde con un error
+(por ejemplo `CLASE_SIN_CUPO` o `401`) lo muestra arriba con su código.
+
+Es una sola página (`public/index.html`) con HTML y JavaScript puro que llama a la API con `fetch`. No forma parte
+de la API: es una ayuda para la demo. La documentación completa de los endpoints está en http://localhost:8000/api-docs.
+
 ## Autenticación
 
 Los endpoints que **modifican datos** (`POST`, `PUT`, `PATCH` y `DELETE` de socios, clases e inscripciones) están
