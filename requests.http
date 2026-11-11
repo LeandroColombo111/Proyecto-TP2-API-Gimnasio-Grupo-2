@@ -6,6 +6,75 @@ GET {{baseUrl}}/health
 ### Ruta inexistente
 GET {{baseUrl}}/nada
 
+########## AUTENTICACIÓN ##########
+# Los pedidos que modifican datos (POST, PUT, PATCH y DELETE) llevan el token en el encabezado Authorization.
+# Primero hay que ejecutar el login: guarda el token en la variable @token para todos los pedidos siguientes.
+# Usuario: ADMIN_EMAIL y ADMIN_PASSWORD del .env (valores de ejemplo en .env.example)
+
+### Login
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@gimnasio.com",
+  "password": "admin1234"
+}
+
+@token = {{login.response.body.token}}
+
+### Login con contraseña incorrecta
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@gimnasio.com",
+  "password": "incorrecta"
+}
+
+### Login con email inexistente (mismo error que la contraseña incorrecta)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "nadie@mail.com",
+  "password": "admin1234"
+}
+
+### Login con body inválido
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "no-es-un-email"
+}
+
+### Crear socio sin token
+POST {{baseUrl}}/socios
+Content-Type: application/json
+
+{
+  "nombre": "Sin",
+  "apellido": "Token",
+  "email": "sin.token@mail.com",
+  "dni": "40111222"
+}
+
+### Crear socio con token inválido
+POST {{baseUrl}}/socios
+Authorization: Bearer abc.def.ghi
+Content-Type: application/json
+
+{
+  "nombre": "Token",
+  "apellido": "Falso",
+  "email": "token.falso@mail.com",
+  "dni": "40111333"
+}
+
+### Borrar sin token
+DELETE {{baseUrl}}/socios/1
+
 ########## SOCIOS ##########
 
 ### Listar socios
@@ -22,6 +91,7 @@ GET {{baseUrl}}/socios/abc
 
 ### Crear socio
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -34,6 +104,7 @@ Content-Type: application/json
 
 ### Crear socio sin teléfono
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -45,6 +116,7 @@ Content-Type: application/json
 
 ### Email duplicado
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -56,6 +128,7 @@ Content-Type: application/json
 
 ### DNI duplicado
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -67,12 +140,14 @@ Content-Type: application/json
 
 ### Body vacío
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
 ### Email y DNI inválidos
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -84,12 +159,14 @@ Content-Type: application/json
 
 ### JSON mal formado
 POST {{baseUrl}}/socios
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 { "nombre": "Julia", }
 
 ### Modificar socio
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -98,6 +175,7 @@ Content-Type: application/json
 
 ### Modificar conservando su propio email
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -106,6 +184,7 @@ Content-Type: application/json
 
 ### Modificar con el email de otro socio
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -114,6 +193,7 @@ Content-Type: application/json
 
 ### Modificar con el DNI de otro socio
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -122,12 +202,14 @@ Content-Type: application/json
 
 ### Modificar sin campos
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
 ### Modificar con campo desconocido
 PUT {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -136,6 +218,7 @@ Content-Type: application/json
 
 ### Modificar socio inexistente
 PUT {{baseUrl}}/socios/999
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -144,9 +227,11 @@ Content-Type: application/json
 
 ### Borrar socio
 DELETE {{baseUrl}}/socios/3
+Authorization: Bearer {{token}}
 
 ### Borrar socio inexistente
 DELETE {{baseUrl}}/socios/999
+Authorization: Bearer {{token}}
 
 ########## CLASES ##########
 
@@ -164,6 +249,7 @@ GET {{baseUrl}}/clases/abc
 
 ### Crear clase
 POST {{baseUrl}}/clases
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -176,6 +262,7 @@ Content-Type: application/json
 
 ### Día inválido
 POST {{baseUrl}}/clases
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -188,6 +275,7 @@ Content-Type: application/json
 
 ### Horario inválido
 POST {{baseUrl}}/clases
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -200,6 +288,7 @@ Content-Type: application/json
 
 ### Cupo inválido
 POST {{baseUrl}}/clases
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -212,12 +301,14 @@ Content-Type: application/json
 
 ### Body vacío
 POST {{baseUrl}}/clases
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {}
 
 ### Modificar clase
 PUT {{baseUrl}}/clases/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -226,6 +317,7 @@ Content-Type: application/json
 
 ### Modificar cupo máximo
 PUT {{baseUrl}}/clases/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -234,6 +326,7 @@ Content-Type: application/json
 
 ### cuposDisponibles no se puede enviar
 PUT {{baseUrl}}/clases/1
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -242,6 +335,7 @@ Content-Type: application/json
 
 ### Modificar clase inexistente
 PUT {{baseUrl}}/clases/999
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -250,9 +344,11 @@ Content-Type: application/json
 
 ### Borrar clase
 DELETE {{baseUrl}}/clases/3
+Authorization: Bearer {{token}}
 
 ### Borrar clase inexistente
 DELETE {{baseUrl}}/clases/999
+Authorization: Bearer {{token}}
 
 ########## FILTROS, ORDEN Y PAGINACIÓN ##########
 
@@ -289,6 +385,7 @@ GET {{baseUrl}}/clases?dia=domingo
 
 ### Inscribir socio 1 en Spinning
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -298,6 +395,7 @@ Content-Type: application/json
 
 ### Ya inscripto
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -307,6 +405,7 @@ Content-Type: application/json
 
 ### Inscribir socio 2 en Spinning
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -316,6 +415,7 @@ Content-Type: application/json
 
 ### Sin cupo: el socio 4 se crea antes con POST /socios
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -325,6 +425,7 @@ Content-Type: application/json
 
 ### Socio inactivo
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -334,6 +435,7 @@ Content-Type: application/json
 
 ### Socio inexistente
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -343,6 +445,7 @@ Content-Type: application/json
 
 ### Clase inexistente
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -352,6 +455,7 @@ Content-Type: application/json
 
 ### Body inválido
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -389,12 +493,15 @@ GET {{baseUrl}}/clases/999/socios
 
 ### Borrar socio con inscripción activa
 DELETE {{baseUrl}}/socios/1
+Authorization: Bearer {{token}}
 
 ### Borrar clase con inscripciones activas
 DELETE {{baseUrl}}/clases/2
+Authorization: Bearer {{token}}
 
 ### Bajar el cupo por debajo de los inscriptos
 PUT {{baseUrl}}/clases/2
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -403,6 +510,7 @@ Content-Type: application/json
 
 ### Subir el cupo
 PUT {{baseUrl}}/clases/2
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -411,17 +519,21 @@ Content-Type: application/json
 
 ### Cancelar inscripción
 PATCH {{baseUrl}}/inscripciones/1/cancelar
+Authorization: Bearer {{token}}
 
 ### Cancelar de nuevo
 PATCH {{baseUrl}}/inscripciones/1/cancelar
+Authorization: Bearer {{token}}
 
 ### Cancelar inscripción inexistente
 PATCH {{baseUrl}}/inscripciones/999/cancelar
+Authorization: Bearer {{token}}
 
 ########## EVENTOS ##########
 
 ### Inscripción en Yoga
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -431,6 +543,7 @@ Content-Type: application/json
 
 ### Inscripción en Spinning
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
@@ -440,6 +553,7 @@ Content-Type: application/json
 
 ### Inscripción con socio inexistente
 POST {{baseUrl}}/inscripciones
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
