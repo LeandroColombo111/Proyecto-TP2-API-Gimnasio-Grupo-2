@@ -4,11 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "start": "node --env-file=.env index.js",
     "dev": "node --env-file=.env --watch index.js",
     "paridad": "node --env-file=.env scripts/paridad.js",
-    "paridad:comparar": "node scripts/comparar.js"
+    "paridad:comparar": "node scripts/comparar.js",
+    "test:watch": "vitest"
   },
   "repository": {
     "type": "git",
@@ -31,5 +32,8 @@
     "swagger-ui-express": "^5.0.1",
     "yaml": "^2.9.1",
     "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "vitest": "^5.1.0"
   }
 }
