@@ -6,6 +6,8 @@ info:
 servers:
   - url: http://localhost:8000
 tags:
+  - name: Auth
+    description: Inicio de sesión (devuelve el token JWT que piden los endpoints protegidos)
   - name: Socios
     description: Alta, consulta, modificación y baja de socios
   - name: Clases
@@ -14,6 +16,43 @@ tags:
     description: Inscripción de socios a clases (relación N a N) y cancelación
 
 paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      description: >-
+        Devuelve un token JWT. Hay que enviarlo en el encabezado Authorization: Bearer <token>
+        en los endpoints que modifican datos (POST, PUT, PATCH y DELETE). En Swagger UI se carga
+        una vez con el botón "Authorize".
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              email: admin@gimnasio.com
+              password: admin1234
+      responses:
+        "200":
+          description: Credenciales correctas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Email o contraseña incorrectos (el mismo error para los dos casos)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: { code: CREDENCIALES_INVALIDAS, message: Email o contraseña incorrectos }
+        "500":
+          $ref: "#/components/responses/InternalError"
+
   /socios:
     get:
       tags: [Socios]
@@ -55,6 +94,8 @@ paths:
     post:
       tags: [Socios]
       summary: Crear un socio
+      security:
+        - bearerAuth: []
       requestBody:
         required: true
         content:
@@ -89,6 +130,8 @@ paths:
                 dniDuplicado:
                   value:
                     error: { code: DNI_DUPLICADO, message: Ya existe un socio con ese DNI }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -120,6 +163,8 @@ paths:
     put:
       tags: [Socios]
       summary: Modificar un socio
+      security:
+        - bearerAuth: []
       description: Se puede enviar solo los campos a cambiar, pero al menos uno.
       requestBody:
         required: true
@@ -155,11 +200,15 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: EMAIL_DUPLICADO, message: Ya existe un socio con ese email }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [Socios]
       summary: Borrar un socio
+      security:
+        - bearerAuth: []
       description: No se puede borrar un socio con inscripciones activas.
       responses:
         "204":
@@ -182,6 +231,8 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: SOCIO_CON_INSCRIPCIONES, message: No se puede borrar un socio con inscripciones activas }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -260,6 +311,8 @@ paths:
     post:
       tags: [Clases]
       summary: Crear una clase
+      security:
+        - bearerAuth: []
       description: cuposDisponibles lo calcula el sistema y arranca igual a cupoMaximo.
       requestBody:
         required: true
@@ -282,6 +335,8 @@ paths:
                 $ref: "#/components/schemas/Clase"
         "400":
           $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -313,6 +368,8 @@ paths:
     put:
       tags: [Clases]
       summary: Modificar una clase
+      security:
+        - bearerAuth: []
       description: >-
         Se puede enviar solo los campos a cambiar, pero al menos uno.
         Si cambia cupoMaximo, no puede ser menor a los inscriptos activos y
@@ -351,11 +408,15 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: CUPO_INVALIDO, message: El cupo máximo no puede ser menor a los inscriptos activos (2) }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
     delete:
       tags: [Clases]
       summary: Borrar una clase
+      security:
+        - bearerAuth: []
       description: No se puede borrar una clase con inscripciones activas.
       responses:
         "204":
@@ -378,6 +439,8 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: CLASE_CON_INSCRIPCIONES, message: No se puede borrar una clase con inscripciones activas }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -447,6 +510,8 @@ paths:
     post:
       tags: [Inscripciones]
       summary: Inscribir un socio a una clase
+      security:
+        - bearerAuth: []
       description: >-
         Crea la inscripción y descuenta un cupo de la clase. Dispara el evento inscripcion.creada
         y, si la clase queda con pocos cupos, clase.cupoBajo.
@@ -497,6 +562,8 @@ paths:
                 sinCupo:
                   value:
                     error: { code: CLASE_SIN_CUPO, message: La clase no tiene cupos disponibles }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
@@ -532,6 +599,8 @@ paths:
     patch:
       tags: [Inscripciones]
       summary: Cancelar una inscripción
+      security:
+        - bearerAuth: []
       description: Pasa la inscripción a "cancelada" y devuelve un cupo a la clase.
       responses:
         "200":
@@ -558,10 +627,19 @@ paths:
                 $ref: "#/components/schemas/Error"
               example:
                 error: { code: INSCRIPCION_YA_CANCELADA, message: La inscripción ya estaba cancelada }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
         "500":
           $ref: "#/components/responses/InternalError"
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token que devuelve POST /auth/login
+
   parameters:
     IdPath:
       name: id
@@ -591,6 +669,30 @@ components:
         default: 10
 
   schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@gimnasio.com
+        password:
+          type: string
+          example: admin1234
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          description: Token JWT firmado
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        expiresIn:
+          type: string
+          description: Duración del token
+          example: 1h
+
     PaginationMeta:
       type: object
       properties:
@@ -860,6 +962,19 @@ components:
       example: lunes
 
   responses:
+    Unauthorized:
+      description: Falta el token, es inválido o expiró
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            sinToken:
+              value:
+                error: { code: UNAUTHORIZED, message: "Falta el token. Enviá el encabezado Authorization: Bearer <token>" }
+            tokenInvalido:
+              value:
+                error: { code: TOKEN_INVALIDO, message: El token es inválido o expiró }
     BadRequest:
       description: Datos inválidos (body, params o JSON mal formado)
       content:

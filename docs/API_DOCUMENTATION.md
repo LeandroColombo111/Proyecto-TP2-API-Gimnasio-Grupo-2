@@ -8,8 +8,39 @@ Resumen legible de todos los endpoints. La versión interactiva (con "Try it out
 
 ## Autenticación
 
-Hoy **ningún endpoint requiere autenticación**. La protección con JWT de los endpoints de escritura
-(`POST`, `PUT`, `PATCH`, `DELETE`) está planificada.
+La API usa **JWT** (JSON Web Token):
+
+- Los endpoints que **modifican datos** (`POST`, `PUT`, `PATCH` y `DELETE` de socios, clases e inscripciones)
+  **requieren un token**.
+- Los `GET`, `GET /health`, `/api-docs` y `POST /auth/login` son **públicos**.
+
+Cómo usarlo:
+1. Iniciar sesión con `POST /auth/login` y copiar el `token` de la respuesta.
+2. Enviarlo en cada pedido protegido: `Authorization: Bearer <token>`.
+3. En Swagger UI: botón **Authorize** (arriba a la derecha), pegar el token y listo. En `requests.http` el login
+   guarda el token solo en la variable `@token`.
+
+Si falta el token, es inválido o venció, el pedido responde `401` (`UNAUTHORIZED` o `TOKEN_INVALIDO`) y no llega
+a ejecutar nada. El usuario administrador se crea al arrancar con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del `.env`
+(la contraseña se guarda hasheada).
+
+### `POST /auth/login`
+Inicia sesión. Público.
+
+Body:
+```json
+{ "email": "admin@gimnasio.com", "password": "admin1234" }
+```
+
+**200** con el token:
+```json
+{ "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...", "expiresIn": "1h" }
+```
+
+**400** `VALIDATION_ERROR` (email inválido o falta la contraseña) · **401** `CREDENCIALES_INVALIDAS`.
+
+El error `401` es **el mismo** si el email no existe o si la contraseña es incorrecta: así nadie puede descubrir
+qué emails están registrados.
 
 ## Convenciones
 
@@ -90,6 +121,8 @@ Lista socios con filtros, orden y paginación.
 Devuelve un socio. **200** con el socio · **400** id inválido · **404** `SOCIO_NOT_FOUND`.
 
 ### `POST /socios`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Crea un socio.
 
 Body:
@@ -107,6 +140,8 @@ Body:
 **201** con el socio creado · **400** `VALIDATION_ERROR` · **409** `EMAIL_DUPLICADO` o `DNI_DUPLICADO`.
 
 ### `PUT /socios/:id`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Modifica un socio. Se envían solo los campos a cambiar, pero **al menos uno**. No se aceptan campos desconocidos.
 
 Body (ejemplo): `{ "telefono": "1155559999", "activo": false }`
@@ -115,6 +150,8 @@ Body (ejemplo): `{ "telefono": "1155559999", "activo": false }`
 `DNI_DUPLICADO` (si el valor pertenece a **otro** socio; conservar el propio no es duplicado).
 
 ### `DELETE /socios/:id`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Borra un socio. **204** sin body · **400** · **404** `SOCIO_NOT_FOUND` · **409** `SOCIO_CON_INSCRIPCIONES`
 (tiene inscripciones activas).
 
@@ -155,6 +192,8 @@ Lista clases con filtros, orden y paginación.
 **200** · **400** · **404** `CLASE_NOT_FOUND`.
 
 ### `POST /clases`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Body:
 ```json
 { "nombre": "Pilates", "instructor": "Marina Ruiz", "dia": "martes", "horario": "10:30", "cupoMaximo": 12 }
@@ -164,6 +203,8 @@ Body:
 **201** con la clase creada · **400** (día, horario o cupo inválidos).
 
 ### `PUT /clases/:id`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Modifica una clase (al menos un campo; no se acepta `cuposDisponibles`).
 
 Si cambia `cupoMaximo`:
@@ -173,6 +214,8 @@ Si cambia `cupoMaximo`:
 **200** · **400** · **404** `CLASE_NOT_FOUND` · **409** `CUPO_INVALIDO`.
 
 ### `DELETE /clases/:id`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 **204** · **400** · **404** `CLASE_NOT_FOUND` · **409** `CLASE_CON_INSCRIPCIONES` (tiene inscripciones activas).
 
 ### `GET /clases/:id/socios`
@@ -206,6 +249,8 @@ Lista inscripciones. Query opcional: `socioId`, `claseId`, `estado` (`activa` | 
 **200** · **400** · **404** `INSCRIPCION_NOT_FOUND`.
 
 ### `POST /inscripciones`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Inscribe un socio a una clase. En una sola operación crea la inscripción y descuenta un cupo de la clase.
 
 Body: `{ "socioId": 1, "claseId": 2 }`
@@ -239,6 +284,8 @@ Eventos: al inscribir se emite `inscripcion.creada` y, si la clase queda con `cu
 CUPO_BAJO_THRESHOLD`, también `clase.cupoBajo`. Si la inscripción falla, no se emite nada.
 
 ### `PATCH /inscripciones/:id/cancelar`
+
+**Requiere token** (`Authorization: Bearer <token>`); sin token responde `401`.
 Cancela la inscripción y devuelve un cupo a la clase.
 
 **200** con la inscripción (`estado: "cancelada"`) · **400** · **404** `INSCRIPCION_NOT_FOUND` · **409**

@@ -5,6 +5,8 @@ import clasesMemoryDao from "./clases/ClasesMemoryDao.js";
 import clasesSequelizeDao from "./clases/ClasesSequelizeDao.js";
 import inscripcionesMemoryDao from "./inscripciones/InscripcionesMemoryDao.js";
 import inscripcionesSequelizeDao from "./inscripciones/InscripcionesSequelizeDao.js";
+import usuariosMemoryDao from "./usuarios/UsuariosMemoryDao.js";
+import usuariosSequelizeDao from "./usuarios/UsuariosSequelizeDao.js";
 
 // Factory de DAOs: devuelve la implementación que corresponde según PERSISTENCE_TYPE ("memory" o "sequelize").
 // Los casos de uso nunca saben cuál les tocó.
@@ -20,4 +22,8 @@ function getInscripcionesDao() {
   return PERSISTENCE_TYPE === "sequelize" ? inscripcionesSequelizeDao : inscripcionesMemoryDao;
 }
 
-export { getSociosDao, getClasesDao, getInscripcionesDao };
+function getUsuariosDao() {
+  return PERSISTENCE_TYPE === "sequelize" ? usuariosSequelizeDao : usuariosMemoryDao;
+}
+
+export { getSociosDao, getClasesDao, getInscripcionesDao, getUsuariosDao };

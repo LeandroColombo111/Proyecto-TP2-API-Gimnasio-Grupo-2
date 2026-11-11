@@ -2,6 +2,7 @@ import { sequelize } from "../../connection/index.js";
 import SocioModel from "./SocioModel.js";
 import ClaseModel from "./ClaseModel.js";
 import InscripcionModel from "./InscripcionModel.js";
+import UsuarioModel from "./UsuarioModel.js"; // sin asociaciones: solo se usa para el login
 
 // -----------------------------------------------------------------------------
 // ASOCIACIONES (se definen todas acá, en un solo lugar)
@@ -49,4 +50,4 @@ function sincronizar() {
   return sincronizacion;
 }
 
-export { sequelize, sincronizar, SocioModel, ClaseModel, InscripcionModel };
+export { sequelize, sincronizar, SocioModel, ClaseModel, InscripcionModel, UsuarioModel };

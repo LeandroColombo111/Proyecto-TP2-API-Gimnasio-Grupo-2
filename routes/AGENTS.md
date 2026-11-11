@@ -12,26 +12,29 @@ Nada más: sin reglas de negocio, sin acceso a datos, sin armar respuestas.
 | `sociosRoutes.js` | `/socios` (incluye `/:id/clases`) |
 | `clasesRoutes.js` | `/clases` (incluye `/:id/socios`) |
 | `inscripcionesRoutes.js` | `/inscripciones` (incluye `PATCH /:id/cancelar`) |
+| `authRoutes.js` | `/auth` (`POST /login`, público) |
 | `docsRoutes.js` | `/api-docs` (Swagger UI, lee `docs/openapi.yaml`) |
 
 ## Reglas
-- Cada archivo exporta una **factory** `createXxxRouter(controller)`: recibe el controlador ya armado. Nunca
-  importa un controlador, un caso de uso ni un DAO directamente.
-- Cada ruta declara sus validaciones en este orden: `validateParams` → `validateQuery` → `validate` (body) →
-  método del controlador.
+- Cada archivo exporta una **factory** `createXxxRouter(controller, requireAuth)`: recibe el controlador y el
+  middleware de autenticación ya armados. Nunca importa un controlador, un caso de uso ni un DAO directamente.
+- Las rutas que **modifican datos** (`POST`, `PUT`, `PATCH`, `DELETE`) llevan `requireAuth` como **primer**
+  middleware, antes de validar nada. Los `GET` y el login son públicos.
+- Cada ruta declara sus validaciones en este orden: `requireAuth` (si corresponde) → `validateParams` →
+  `validateQuery` → `validate` (body) → método del controlador.
 - Los schemas se importan de `schemas/`. No se definen schemas Zod acá.
 - Las rutas de la relación N a N (`/:id/clases`, `/:id/socios`) se declaran junto a `/:id` del mismo recurso.
 
 ## Patrón
 ```js
-function createSociosRouter(controller) {
+function createSociosRouter(controller, requireAuth) {
   const router = Router();
 
   router.get("/", validateQuery(querySociosSchema), controller.list);
   router.get("/:id", validateParams(socioIdParamSchema), controller.get);
-  router.post("/", validate(createSocioSchema), controller.create);
-  router.put("/:id", validateParams(socioIdParamSchema), validate(updateSocioSchema), controller.update);
-  router.delete("/:id", validateParams(socioIdParamSchema), controller.remove);
+  router.post("/", requireAuth, validate(createSocioSchema), controller.create);
+  router.put("/:id", requireAuth, validateParams(socioIdParamSchema), validate(updateSocioSchema), controller.update);
+  router.delete("/:id", requireAuth, validateParams(socioIdParamSchema), controller.remove);
 
   return router;
 }

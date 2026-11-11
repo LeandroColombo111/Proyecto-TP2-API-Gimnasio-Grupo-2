@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node --env-file=.env index.js",
     "dev": "node --env-file=.env --watch index.js",
-    "paridad": "node scripts/paridad.js",
+    "paridad": "node --env-file=.env scripts/paridad.js",
     "paridad:comparar": "node scripts/comparar.js"
   },
   "repository": {
@@ -23,7 +23,9 @@
   },
   "homepage": "https://github.com/LeandroColombo111/Proyecto-TP2-Grupo-2#readme",
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
     "sequelize": "^6.37.8",
     "sqlite3": "^6.0.1",
     "swagger-ui-express": "^5.0.1",

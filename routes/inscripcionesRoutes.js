@@ -6,14 +6,15 @@ import {
   queryInscripcionesSchema,
 } from "../schemas/inscripcionSchema.js";
 
-// Router de Inscripciones: recibe el controlador ya armado y le asigna validaciones a cada ruta
-function createInscripcionesRouter(controller) {
+// Router de Inscripciones: recibe el controlador y el middleware de autenticación ya armados.
+// Los GET son públicos; inscribir y cancelar exigen un token (requireAuth va primero).
+function createInscripcionesRouter(controller, requireAuth) {
   const router = Router();
 
   router.get("/", validateQuery(queryInscripcionesSchema), controller.list);
   router.get("/:id", validateParams(inscripcionIdParamSchema), controller.get);
-  router.post("/", validate(createInscripcionSchema), controller.create);
-  router.patch("/:id/cancelar", validateParams(inscripcionIdParamSchema), controller.cancelar);
+  router.post("/", requireAuth, validate(createInscripcionSchema), controller.create);
+  router.patch("/:id/cancelar", requireAuth, validateParams(inscripcionIdParamSchema), controller.cancelar);
 
   return router;
 }

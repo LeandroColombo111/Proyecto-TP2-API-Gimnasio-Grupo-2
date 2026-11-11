@@ -22,8 +22,11 @@ Verifican que los dos modos de persistencia respondan igual (consigna: "ambos mo
 
 | Archivo | Uso |
 |---|---|
-| `paridad.js` | `node scripts/paridad.js <urlBase> <archivoSalida>`: ejecuta 57 pedidos fijos y guarda status + body de cada uno |
+| `paridad.js` | `node scripts/paridad.js <urlBase> <archivoSalida>`: ejecuta 65 pedidos fijos y guarda status + body de cada uno |
 | `comparar.js` | `node scripts/comparar.js <a.json> <b.json>`: muestra las diferencias; termina con código 1 si hay alguna |
+
+El script **hace login** con `ADMIN_EMAIL` y `ADMIN_PASSWORD` (por eso `npm run paridad` carga el `.env`) y manda el
+token en los pedidos que modifican datos. También verifica los casos sin token y con token falso (401).
 
 Cómo correrlos (desde la raíz):
 1. Levantar el servidor con `PERSISTENCE_TYPE=memory` y correr `npm run paridad -- http://localhost:8000 memory.json`.

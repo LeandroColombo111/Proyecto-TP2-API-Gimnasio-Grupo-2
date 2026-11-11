@@ -11,7 +11,8 @@ Leer y escribir datos. Cada entidad tiene **dos adaptadores con la misma interfa
 socios/          SociosMemoryDao.js          SociosSequelizeDao.js
 clases/          ClasesMemoryDao.js          ClasesSequelizeDao.js
 inscripciones/   InscripcionesMemoryDao.js   InscripcionesSequelizeDao.js
-models/          SocioModel.js, ClaseModel.js, InscripcionModel.js, index.js (asociaciones y sincronizar())
+usuarios/        UsuariosMemoryDao.js        UsuariosSequelizeDao.js   (solo para el login)
+models/          SocioModel.js, ClaseModel.js, InscripcionModel.js, UsuarioModel.js, index.js (asociaciones y sincronizar())
 daoFactory.js    getSociosDao / getClasesDao / getInscripcionesDao, según PERSISTENCE_TYPE
 memoryUtils.js   ordenar y paginar un array (helpers de los DAO en memoria)
 sequelizeUtils.js  armarOrden, armarPagina y aPlano (helpers de los DAO de Sequelize)
@@ -22,6 +23,7 @@ sequelizeUtils.js  armarOrden, armarPagina y aPlano (helpers de los DAO de Seque
 |---|---|
 | Socios | `getAll({ filtros, sort, page, limit })` → `{ items, total }`, `getById`, `getByEmail`, `getByDni`, `save`, `update`, `delete` |
 | Clases | `getAll({ filtros, sort, page, limit })` → `{ items, total }`, `getById`, `save`, `update`, `delete`, `ajustarCupo(id, delta)` |
+| Usuarios | `getByEmailConHash(email)` → usuario **con** `passwordHash` o `null` (solo para el login), `save({ email, passwordHash, rol })` → usuario **sin** hash |
 | Inscripciones | `getAll(filtros)`, `getById`, `findActiva(socioId, claseId)`, `countActivasByClase`, `countActivasBySocio`, `getClasesActivasBySocio`, `getSociosActivosByClase`, `inscribir({ socioId, claseId })`, `cancelar(id)` |
 
 Retornos: `getById` / `getByEmail` / `getByDni` / `update` → el objeto o `null`. `delete` → `true` / `false`.

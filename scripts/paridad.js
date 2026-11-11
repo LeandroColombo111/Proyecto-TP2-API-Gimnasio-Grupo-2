@@ -2,8 +2,8 @@
 // Se corre una vez con PERSISTENCE_TYPE=memory y otra con PERSISTENCE_TYPE=sequelize (con la base vacía),
 // y después scripts/comparar.js muestra las diferencias entre los dos resultados.
 //
-// Uso: node scripts/paridad.js <urlBase> <archivoSalida>
-//   ej: node scripts/paridad.js http://localhost:8000 resultado-memory.json
+// Uso: node --env-file=.env scripts/paridad.js <urlBase> <archivoSalida>
+//   ej: node --env-file=.env scripts/paridad.js http://localhost:8000 resultado-memory.json
 import { writeFile } from "node:fs/promises";
 
 const [urlBase, archivoSalida] = process.argv.slice(2);
@@ -14,9 +14,30 @@ if (!urlBase || !archivoSalida) {
 
 const json = { "Content-Type": "application/json" };
 
-// Cada paso: [nombre, método, ruta, body]. Los ids dependen del orden, por eso la secuencia es fija.
+// Credenciales del administrador (las mismas del .env; por eso el script se corre con --env-file=.env)
+const email = process.env.ADMIN_EMAIL ?? "admin@gimnasio.com";
+const password = process.env.ADMIN_PASSWORD;
+if (!password) {
+  console.error("Falta ADMIN_PASSWORD: correr con  node --env-file=.env scripts/paridad.js ...");
+  process.exit(1);
+}
+
+// Cada paso: [nombre, método, ruta, body, opcion]. Los ids dependen del orden, por eso la secuencia es fija.
+// Los pedidos que modifican datos llevan el token del administrador, salvo que la opción diga otra cosa:
+//   "sin-token"   -> no se manda el encabezado Authorization
+//   "token-falso" -> se manda un token inventado
 const pasos = [
   ["health", "GET", "/health"],
+
+  // Autenticación
+  ["login ok", "POST", "/auth/login", { email, password }],
+  ["login contraseña incorrecta", "POST", "/auth/login", { email, password: "incorrecta" }],
+  ["login email inexistente", "POST", "/auth/login", { email: "nadie@mail.com", password }],
+  ["login body invalido", "POST", "/auth/login", { email: "x" }],
+  ["escritura sin token", "POST", "/socios", {}, "sin-token"],
+  ["escritura con token falso", "POST", "/socios", {}, "token-falso"],
+  ["borrar sin token", "DELETE", "/socios/1", undefined, "sin-token"],
+  ["cancelar sin token", "PATCH", "/inscripciones/1/cancelar", undefined, "sin-token"],
 
   // Socios: listados, filtros, orden y paginación
   ["socios lista", "GET", "/socios"],
@@ -89,26 +110,44 @@ const pasos = [
   ["socios lista final", "GET", "/socios?sort=apellido"],
 ];
 
-// La fecha de inscripción cambia en cada corrida: se reemplaza para poder comparar
-function sinFechas(valor) {
-  if (Array.isArray(valor)) return valor.map(sinFechas);
+// La fecha de inscripción y el token cambian en cada corrida: se reemplazan para poder comparar
+function sinDatosVariables(valor) {
+  if (Array.isArray(valor)) return valor.map(sinDatosVariables);
   if (valor && typeof valor === "object") {
     return Object.fromEntries(
-      Object.entries(valor).map(([clave, v]) => [clave, clave === "fechaInscripcion" ? "<fecha>" : sinFechas(v)]),
+      Object.entries(valor).map(([clave, v]) => {
+        if (clave === "fechaInscripcion") return [clave, "<fecha>"];
+        if (clave === "token") return [clave, "<token>"];
+        return [clave, sinDatosVariables(v)];
+      }),
     );
   }
   return valor;
 }
 
+// Primero se inicia sesión para tener un token con el que hacer los pedidos que modifican datos
+const login = await fetch(`${urlBase}/auth/login`, { method: "POST", headers: json, body: JSON.stringify({ email, password }) });
+if (!login.ok) {
+  console.error(`No se pudo iniciar sesión (status ${login.status}). Revisar ADMIN_EMAIL y ADMIN_PASSWORD.`);
+  process.exit(1);
+}
+const { token } = await login.json();
+
 const resultados = [];
-for (const [nombre, metodo, ruta, body] of pasos) {
+for (const [nombre, metodo, ruta, body, opcion] of pasos) {
+  const encabezados = {};
+  if (body) Object.assign(encabezados, json);
+  if (metodo !== "GET" && !ruta.startsWith("/auth") && opcion !== "sin-token") {
+    encabezados.Authorization = `Bearer ${opcion === "token-falso" ? "abc.def.ghi" : token}`;
+  }
+
   const respuesta = await fetch(urlBase + ruta, {
     method: metodo,
-    headers: body ? json : undefined,
+    headers: encabezados,
     body: body ? JSON.stringify(body) : undefined,
   });
   const texto = await respuesta.text();
-  resultados.push({ nombre, pedido: `${metodo} ${ruta}`, status: respuesta.status, body: texto ? sinFechas(JSON.parse(texto)) : null });
+  resultados.push({ nombre, pedido: `${metodo} ${ruta}`, status: respuesta.status, body: texto ? sinDatosVariables(JSON.parse(texto)) : null });
 }
 
 await writeFile(archivoSalida, JSON.stringify(resultados, null, 2), "utf8");
