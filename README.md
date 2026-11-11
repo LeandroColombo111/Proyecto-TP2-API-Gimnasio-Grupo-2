@@ -1,5 +1,19 @@
 # API Gimnasio
 
+## Tests
+
+Los casos de uso y el dominio tienen tests automáticos con **Vitest**, que no necesitan servidor ni base de datos:
+usan los DAO en memoria como dobles.
+
+```bash
+npm test
+```
+
+Se desarrollaron con **Spec Driven Development**: primero se escribió la especificación
+(`docs/specs/casos-de-uso.spec.md`, donde cada comportamiento tiene un id como `INS-05`) y cada test lleva ese id en
+su nombre. Cubren el camino feliz, cada error (con su `code` y su `statusCode`), los eventos y los casos margen
+(último cupo, lista vacía, página fuera de rango...). Guía: `tests/AGENTS.md`.
+
 ## Página de demo
 
 Con el servidor levantado (`npm run dev`), la página http://localhost:8000 permite probar la API desde el navegador:
