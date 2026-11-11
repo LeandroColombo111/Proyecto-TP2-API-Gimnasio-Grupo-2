@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Demo - API Gimnasio</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 960px; margin: 0 auto; padding: 16px; color: #222; background: #f5f5f5; }
+    h1 { margin-bottom: 4px; }
+    h2 { margin-top: 0; font-size: 18px; }
+    section { background: white; border: 1px solid #ccc; border-radius: 6px; padding: 12px 16px; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 6px; border-bottom: 1px solid #ddd; font-size: 14px; }
+    input, select, button { padding: 6px; margin: 2px; font-size: 14px; }
+    button { cursor: pointer; }
+    .nota { color: #555; font-size: 14px; }
+    #mensaje { padding: 10px; border-radius: 6px; margin-bottom: 16px; display: none; }
+    .ok { background: #d9f2d9; border: 1px solid #6bb26b; }
+    .error { background: #f8d7d7; border: 1px solid #c85a5a; }
+    .cancelada { color: #888; }
+  </style>
+</head>
+<body>
+  <h1>API Gimnasio - Demo</h1>
+  <p class="nota">
+    Página de prueba para la defensa: llama a la API con <code>fetch</code>.
+    La documentación completa está en <a href="/api-docs">/api-docs</a>.
+  </p>
+
+  <!-- Acá se muestra el resultado de cada acción (verde = salió bien, rojo = error de la API) -->
+  <div id="mensaje"></div>
+
+  <section>
+    <h2>1. Sesión</h2>
+    <p class="nota">Para crear, inscribir, cancelar o borrar hace falta iniciar sesión. Para consultar no.</p>
+    <input id="email" type="email" value="admin@gimnasio.com" placeholder="Email">
+    <input id="password" type="password" value="admin1234" placeholder="Contraseña">
+    <button onclick="iniciarSesion()">Iniciar sesión</button>
+    <button onclick="cerrarSesion()">Cerrar sesión</button>
+    <strong id="estadoSesion">Sin sesión</strong>
+  </section>
+
+  <section>
+    <h2>2. Clases</h2>
+    <table>
+      <thead><tr><th>Id</th><th>Clase</th><th>Instructor</th><th>Día</th><th>Horario</th><th>Cupos libres</th></tr></thead>
+      <tbody id="tablaClases"></tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>3. Socios</h2>
+    <table>
+      <thead><tr><th>Id</th><th>Nombre</th><th>Email</th><th>DNI</th><th>Activo</th><th></th></tr></thead>
+      <tbody id="tablaSocios"></tbody>
+    </table>
+    <h3>Crear socio</h3>
+    <input id="nuevoNombre" placeholder="Nombre">
+    <input id="nuevoApellido" placeholder="Apellido">
+    <input id="nuevoEmail" placeholder="Email">
+    <input id="nuevoDni" placeholder="DNI (7 u 8 dígitos)">
+    <button onclick="crearSocio()">Crear</button>
+  </section>
+
+  <section>
+    <h2>4. Inscripciones</h2>
+    <select id="selectSocio"></select>
+    <select id="selectClase"></select>
+    <button onclick="inscribir()">Inscribir</button>
+    <table>
+      <thead><tr><th>Id</th><th>Socio</th><th>Clase</th><th>Estado</th><th></th></tr></thead>
+      <tbody id="tablaInscripciones"></tbody>
+    </table>
+  </section>
+
+  <script>
+    // El token que devuelve el login. Se guarda también en localStorage (clave "token") para que la sesión
+    // siga abierta si se recarga la página. Se puede ver en las herramientas del navegador (F12 > Application).
+    let token = localStorage.getItem("token");
+
+    // Guarda (o borra, si recibe null) el token en la variable y en localStorage, y actualiza el texto de la sesión
+    function guardarToken(nuevoToken) {
+      token = nuevoToken;
+      if (token) {
+        localStorage.setItem("token", token);
+      } else {
+        localStorage.removeItem("token");
+      }
+      document.getElementById("estadoSesion").textContent = token ? "Sesión iniciada" : "Sin sesión";
+    }
+
+    // Evita que un texto con símbolos como < o > rompa la página
+    function esc(texto) {
+      const reemplazos = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+      return String(texto ?? "").replace(/[&<>"']/g, (c) => reemplazos[c]);
+    }
+
+    // Muestra un mensaje arriba: verde si salió bien, rojo si la API devolvió un error
+    function mostrarMensaje(texto, esError) {
+      const caja = document.getElementById("mensaje");
+      caja.textContent = texto;
+      caja.className = esError ? "error" : "ok";
+      caja.style.display = "block";
+    }
+
+    // Hace un pedido a la API. Si el login está hecho, manda el token en el encabezado Authorization.
+    // Devuelve los datos (o true si no hay body) y, si hay un error, lo muestra y devuelve null.
+    async function llamar(metodo, ruta, body) {
+      const opciones = { method: metodo, headers: {} };
+      if (body) {
+        opciones.headers["Content-Type"] = "application/json";
+        opciones.body = JSON.stringify(body);
+      }
+      if (token) {
+        opciones.headers.Authorization = "Bearer " + token;
+      }
+
+      try {
+        const respuesta = await fetch(ruta, opciones);
+        const datos = respuesta.status === 204 ? null : await respuesta.json();
+
+        if (!respuesta.ok) {
+          const error = datos.error;
+          const detalle = error.details ? " (" + error.details.map((d) => d.field + ": " + d.message).join(", ") + ")" : "";
+          mostrarMensaje(respuesta.status + " " + error.code + ": " + error.message + detalle, true);
+          // Si el token venció o no es válido, ya no sirve: se borra para volver a iniciar sesión
+          if (error.code === "TOKEN_INVALIDO") guardarToken(null);
+          return null;
+        }
+        return datos ?? true;
+      } catch (e) {
+        mostrarMensaje("No se pudo conectar con la API", true);
+        return null;
+      }
+    }
+
+    // Llena un desplegable con las opciones nuevas, pero conserva lo que la persona había elegido.
+    // Sin esto, después de cada acción el desplegable volvería a la primera opción.
+    function llenarSelect(id, opcionesHtml) {
+      const select = document.getElementById(id);
+      const elegido = select.value;
+      select.innerHTML = opcionesHtml;
+      if (elegido) select.value = elegido;
+    }
+
+    // ---------- Sesión ----------
+
+    async function iniciarSesion() {
+      const datos = await llamar("POST", "/auth/login", {
+        email: document.getElementById("email").value,
+        password: document.getElementById("password").value,
+      });
+      if (!datos) return;
+
+      guardarToken(datos.token);
+      mostrarMensaje("Sesión iniciada: el token se guardó en localStorage y vence en " + datos.expiresIn, false);
+    }
+
+    function cerrarSesion() {
+      guardarToken(null);
+      mostrarMensaje("Sesión cerrada: ahora las acciones que modifican datos van a dar 401", false);
+    }
+
+    // ---------- Consultas (GET, no necesitan token) ----------
+
+    async function cargarClases() {
+      const respuesta = await llamar("GET", "/clases?limit=100");
+      if (!respuesta) return;
+
+      document.getElementById("tablaClases").innerHTML = respuesta.data
+        .map((c) => `<tr>
+          <td>${c.id}</td><td>${esc(c.nombre)}</td><td>${esc(c.instructor)}</td>
+          <td>${esc(c.dia)}</td><td>${esc(c.horario)}</td>
+          <td>${c.cuposDisponibles} de ${c.cupoMaximo}</td>
+        </tr>`)
+        .join("");
+
+      llenarSelect(
+        "selectClase",
+        respuesta.data.map((c) => `<option value="${c.id}">${esc(c.nombre)} (${esc(c.dia)} ${esc(c.horario)})</option>`).join(""),
+      );
+    }
+
+    async function cargarSocios() {
+      const respuesta = await llamar("GET", "/socios?limit=100");
+      if (!respuesta) return;
+
+      document.getElementById("tablaSocios").innerHTML = respuesta.data
+        .map((s) => `<tr>
+          <td>${s.id}</td><td>${esc(s.nombre)} ${esc(s.apellido)}</td><td>${esc(s.email)}</td>
+          <td>${esc(s.dni)}</td><td>${s.activo ? "Sí" : "No"}</td>
+          <td><button onclick="borrarSocio(${s.id})">Borrar</button></td>
+        </tr>`)
+        .join("");
+
+      llenarSelect(
+        "selectSocio",
+        respuesta.data.map((s) => `<option value="${s.id}">${esc(s.nombre)} ${esc(s.apellido)}${s.activo ? "" : " (inactivo)"}</option>`).join(""),
+      );
+    }
+
+    async function cargarInscripciones() {
+      const inscripciones = await llamar("GET", "/inscripciones");
+      if (!inscripciones) return;
+
+      document.getElementById("tablaInscripciones").innerHTML = inscripciones
+        .map((i) => `<tr class="${i.estado === "cancelada" ? "cancelada" : ""}">
+          <td>${i.id}</td>
+          <td>${i.socio ? esc(i.socio.nombre) + " " + esc(i.socio.apellido) : "(socio borrado)"}</td>
+          <td>${i.clase ? esc(i.clase.nombre) : "(clase borrada)"}</td>
+          <td>${esc(i.estado)}</td>
+          <td>${i.estado === "activa" ? `<button onclick="cancelarInscripcion(${i.id})">Cancelar</button>` : ""}</td>
+        </tr>`)
+        .join("");
+    }
+
+    // Vuelve a pedir todo a la API para mostrar los datos actualizados
+    async function cargarTodo() {
+      await cargarClases();
+      await cargarSocios();
+      await cargarInscripciones();
+    }
+
+    // ---------- Acciones (necesitan token) ----------
+
+    async function crearSocio() {
+      const socio = await llamar("POST", "/socios", {
+        nombre: document.getElementById("nuevoNombre").value,
+        apellido: document.getElementById("nuevoApellido").value,
+        email: document.getElementById("nuevoEmail").value,
+        dni: document.getElementById("nuevoDni").value,
+      });
+      if (!socio) return;
+
+      mostrarMensaje("Socio creado con id " + socio.id, false);
+      await cargarTodo();
+    }
+
+    async function borrarSocio(id) {
+      if (!(await llamar("DELETE", "/socios/" + id))) return;
+
+      mostrarMensaje("Socio " + id + " borrado", false);
+      await cargarTodo();
+    }
+
+    async function inscribir() {
+      const inscripcion = await llamar("POST", "/inscripciones", {
+        socioId: Number(document.getElementById("selectSocio").value),
+        claseId: Number(document.getElementById("selectClase").value),
+      });
+      if (!inscripcion) return;
+
+      mostrarMensaje("Inscripción creada con id " + inscripcion.id, false);
+      await cargarTodo();
+    }
+
+    async function cancelarInscripcion(id) {
+      if (!(await llamar("PATCH", "/inscripciones/" + id + "/cancelar"))) return;
+
+      mostrarMensaje("Inscripción " + id + " cancelada: el cupo volvió a la clase", false);
+      await cargarTodo();
+    }
+
+    // Al abrir la página se muestra si ya había una sesión guardada y se cargan los datos
+    guardarToken(token);
+    cargarTodo();
+  </script>
+</body>
+</html>

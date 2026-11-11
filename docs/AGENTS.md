@@ -8,6 +8,7 @@
 | `openapi.yaml` | **Contrato OpenAPI 3.0.3.** Lo sirve Swagger UI en `/api-docs`. Es la fuente de verdad |
 | `API_DOCUMENTATION.md` | Resumen legible de los endpoints, con ejemplos |
 | `API_RESPONSE_STRUCTURE.md` | Formato de respuestas y catálogo de códigos de error |
+| `specs/casos-de-uso.spec.md` | Spec de los casos de uso y el dominio: de cada fila sale un test (ver `tests/AGENTS.md`) |
 
 ## Regla principal: los cuatro se actualizan juntos
 Cada cambio de endpoint, regla o código de error toca, en el mismo cambio:
@@ -16,7 +17,7 @@ Cada cambio de endpoint, regla o código de error toca, en el mismo cambio:
 |---|---|
 | Un endpoint (ruta, body, query, respuestas) | `openapi.yaml`, `API_DOCUMENTATION.md`, `requests.http` |
 | Un código de error o status | `openapi.yaml` (ejemplos), `API_RESPONSE_STRUCTURE.md` (catálogo) |
-| Una regla de negocio | `API_DOCUMENTATION.md` (tabla de reglas) y la sección de dominio de `CLAUDE.md` |
+| Una regla de negocio | `API_DOCUMENTATION.md` (tabla de reglas), la sección de dominio de `CLAUDE.md` y `specs/casos-de-uso.spec.md` (con su test) |
 | Una variable de entorno | `.env.example`, `README.md` y `AGENTS.md` (tabla de variables) |
 | El estado de un sprint | `AGENTS.md` y `CLAUDE.md` (tablas de estado) |
 

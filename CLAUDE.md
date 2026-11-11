@@ -145,7 +145,7 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 | 1 | Base del proyecto, Swagger, CRUD de Socios y Clases en memoria | Hecho |
 | 2 | Inscripciones, reglas de negocio, relación N a N, filtros y paginación, eventos | Hecho |
 | 3 | Persistencia con Sequelize + SQLite, transacción, paridad con memoria | Hecho |
-| 4 | JWT, hash de contraseñas, tests de casos de uso | JWT y hash: hecho. Tests de casos de uso: pendiente |
+| 4 | JWT, hash de contraseñas, tests de casos de uso | Hecho (JWT, hash y tests de casos de uso) |
 | 5 | Swagger y README completos, auditoría contra la consigna, ensayo de defensa | Pendiente |
 
 ## Sprint 3: cómo quedó la persistencia
@@ -194,8 +194,13 @@ El proyecto se desarrolla por sprints (un milestone de GitHub por sprint).
 - Flujo completo y reglas: `auth/AGENTS.md`.
 - `npm run paridad` ahora hace login primero y verifica también los `401` (65 pedidos iguales en ambos modos).
 
-**Pendiente del Sprint 4:** tests de los casos de uso usando DAOs en memoria como dobles (sin servidor ni base de
-datos), con el `code` y el `statusCode` del `AppError` verificados.
+**Tests de casos de uso (hecho)**
+- **Vitest**, con **Spec Driven Development**: la spec está en `docs/specs/casos-de-uso.spec.md` (cada comportamiento
+  tiene un id: `SOC-01`, `INS-05`...) y cada test lleva ese id en su nombre.
+- Los tests usan los **DAO en memoria como dobles** (sin servidor ni base de datos) y helpers compartidos en
+  `tests/helpers/` (`crearEntorno`, `socioValido`, `esperarAppError`). Verifican el `code` y el `statusCode` del
+  `AppError`, los eventos emitidos y los casos margen.
+- `npm test` corre todo. Guía de la carpeta: `tests/AGENTS.md`.
 
 ---
 
