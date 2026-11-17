@@ -10,7 +10,7 @@ API REST de un gimnasio, hecha como TP Integrador de Taller de Programación 2 (
 (relación N a N a través de Inscripciones).
 
 **Stack:** Node.js (ES Modules) · Express 5 · Zod 4 · Sequelize + SQLite · JWT (`jsonwebtoken`) + `bcryptjs` ·
-swagger-ui-express + yaml. Sin TypeScript y sin contenedores de DI (la inyección de dependencias es manual, con
+swagger-ui-express + yaml · Vitest (tests). Sin TypeScript y sin contenedores de DI (la inyección de dependencias es manual, con
 factories).
 
 ## Comandos
@@ -19,6 +19,7 @@ factories).
 npm install        # instalar dependencias
 npm run dev        # servidor con recarga automática (usa .env)
 npm start          # servidor normal (usa .env)
+npm test           # tests de casos de uso y dominio (Vitest, sin servidor ni base de datos)
 ```
 
 Persistencia (se elige con `PERSISTENCE_TYPE` en el `.env`; hay que reiniciar el servidor):
@@ -40,6 +41,7 @@ npm run paridad:comparar -- memory.json sequelize.json        # muestra las dife
 - Los endpoints que modifican datos piden un token: `POST /auth/login` con `ADMIN_EMAIL` y `ADMIN_PASSWORD` del
   `.env` devuelve el token, y se envía como `Authorization: Bearer <token>` (en Swagger, botón **Authorize**).
 - Swagger UI: http://localhost:8000/api-docs
+- Página de demo: http://localhost:8000 (`public/index.html`)
 - Pruebas manuales: `requests.http` (extensión REST Client de VS Code).
 
 ## Estructura del proyecto
@@ -64,7 +66,9 @@ events/                   # Bus de eventos (EventEmitter) y nombres de eventos
 alerts/                   # Listeners: reaccionan a los eventos
 notifications/            # Notificadores (consola, archivo) y su factory
 docs/                     # openapi.yaml y documentación de la API
+public/                   # index.html: página de demo (se abre en http://localhost:8000)
 scripts/                  # paridad.js y comparar.js: verifican que memory y sequelize respondan igual
+tests/                    # Tests con Vitest: helpers/, usecases/, domain/ (guía en tests/AGENTS.md)
 requests.http             # Casos de prueba manuales
 ```
 
@@ -101,6 +105,8 @@ comunes. Este archivo (la raíz) tiene lo transversal; los de las carpetas tiene
 | `alerts/` (listeners) | [`alerts/AGENTS.md`](alerts/AGENTS.md) |
 | `notifications/` (notificadores) | [`notifications/AGENTS.md`](notifications/AGENTS.md) |
 | `docs/` (OpenAPI y documentación) | [`docs/AGENTS.md`](docs/AGENTS.md) |
+| `tests/` (tests con Vitest y la spec) | [`tests/AGENTS.md`](tests/AGENTS.md) |
+| `public/` (página de demo) | [`public/AGENTS.md`](public/AGENTS.md) |
 
 Para entender **qué hace el negocio** (entidades, reglas, cupos), leer la sección "Modelo de dominio" de
 [`CLAUDE.md`](CLAUDE.md).
@@ -130,8 +136,9 @@ Para entender **qué hace el negocio** (entidades, reglas, cupos), leer la secci
 - Hay un solo proceso en el puerto 8000: si el servidor "no cambia", puede haber otro viejo corriendo.
 - El proyecto se **defiende de forma oral**: priorizar código simple y fácil de explicar sobre soluciones ingeniosas.
 
-**Cómo verificar un cambio** (todavía no hay tests automatizados)
+**Cómo verificar un cambio**
 ```bash
+npm test                                       # tests de casos de uso y dominio: tienen que pasar todos
 npm run dev                                    # el servidor tiene que arrancar sin errores
 curl -s http://localhost:8000/health           # { "status": "ok" }
 ```
@@ -247,7 +254,7 @@ por cada error posible. Si se tocó una regla de negocio, repetir el caso que di
 | Swagger en `/api-docs` | Hecho (cubre los endpoints actuales) |
 | Persistencia con Sequelize + SQLite, transacción al inscribir/cancelar | Hecho (paridad verificada con `npm run paridad`) |
 | JWT (login y escrituras protegidas) y hash de contraseñas | Hecho |
-| Tests de casos de uso | Planificado |
+| Tests de casos de uso (Vitest, spec en `docs/specs/`) | Hecho |
 | README completo | Planificado |
 
 ## Qué NO hacer

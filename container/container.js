@@ -1,4 +1,5 @@
-import { Router } from "express";
+import express, { Router } from "express";
+import { fileURLToPath } from "node:url";
 import {
   NOTIFIER_TYPE,
   ALERT_NOTIFIER_TYPE,
@@ -73,6 +74,8 @@ async function buildContainer() {
 
   // 6. Routers (los que modifican datos reciben requireAuth)
   const router = Router();
+  // Página de demo (public/index.html): se abre en http://localhost:8000
+  router.use(express.static(fileURLToPath(new URL("../public", import.meta.url))));
   router.get("/health", (req, res) => res.json({ status: "ok" }));
   router.use("/api-docs", await createDocsRouter());
   router.use("/auth", createAuthRouter(authController));
