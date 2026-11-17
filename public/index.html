@@ -43,9 +43,21 @@
   <section>
     <h2>2. Clases</h2>
     <table>
-      <thead><tr><th>Id</th><th>Clase</th><th>Instructor</th><th>Día</th><th>Horario</th><th>Cupos libres</th></tr></thead>
+      <thead><tr><th>Id</th><th>Clase</th><th>Instructor</th><th>Día</th><th>Horario</th><th>Cupos libres</th><th></th></tr></thead>
       <tbody id="tablaClases"></tbody>
     </table>
+    <h3 id="tituloFormClase">Crear clase</h3>
+    <p class="nota" id="notaFormClase">Para modificar una clase, apretá <strong>Editar</strong> en la tabla: sus datos pasan acá.</p>
+    <input id="claseNombre" placeholder="Nombre">
+    <input id="claseInstructor" placeholder="Instructor">
+    <select id="claseDia">
+      <option>lunes</option><option>martes</option><option>miercoles</option>
+      <option>jueves</option><option>viernes</option><option>sabado</option>
+    </select>
+    <input id="claseHorario" placeholder="Horario (HH:MM)" value="09:00">
+    <input id="claseCupo" type="number" placeholder="Cupo máximo">
+    <button id="botonGuardarClase" onclick="guardarClase()">Crear</button>
+    <button id="botonCancelarEdicion" onclick="limpiarFormClase()" hidden>Cancelar edición</button>
   </section>
 
   <section>
@@ -77,6 +89,10 @@
     // El token que devuelve el login. Se guarda también en localStorage (clave "token") para que la sesión
     // siga abierta si se recarga la página. Se puede ver en las herramientas del navegador (F12 > Application).
     let token = localStorage.getItem("token");
+
+    // Las clases que devolvió la API (para pasarlas al formulario al editar) y el id de la que se está editando
+    let clasesCargadas = [];
+    let claseEnEdicion = null;
 
     // Guarda (o borra, si recibe null) el token en la variable y en localStorage, y actualiza el texto de la sesión
     function guardarToken(nuevoToken) {
@@ -167,11 +183,13 @@
       const respuesta = await llamar("GET", "/clases?limit=100");
       if (!respuesta) return;
 
+      clasesCargadas = respuesta.data;
       document.getElementById("tablaClases").innerHTML = respuesta.data
         .map((c) => `<tr>
           <td>${c.id}</td><td>${esc(c.nombre)}</td><td>${esc(c.instructor)}</td>
           <td>${esc(c.dia)}</td><td>${esc(c.horario)}</td>
           <td>${c.cuposDisponibles} de ${c.cupoMaximo}</td>
+          <td><button onclick="editarClase(${c.id})">Editar</button><button onclick="borrarClase(${c.id})">Borrar</button></td>
         </tr>`)
         .join("");
 
@@ -189,7 +207,10 @@
         .map((s) => `<tr>
           <td>${s.id}</td><td>${esc(s.nombre)} ${esc(s.apellido)}</td><td>${esc(s.email)}</td>
           <td>${esc(s.dni)}</td><td>${s.activo ? "Sí" : "No"}</td>
-          <td><button onclick="borrarSocio(${s.id})">Borrar</button></td>
+          <td>
+            <button onclick="cambiarActivo(${s.id}, ${!s.activo})">${s.activo ? "Desactivar" : "Activar"}</button>
+            <button onclick="borrarSocio(${s.id})">Borrar</button>
+          </td>
         </tr>`)
         .join("");
 
@@ -236,10 +257,73 @@
       await cargarTodo();
     }
 
+    // Modifica solo el campo "activo" (PUT admite cambios parciales)
+    async function cambiarActivo(id, activo) {
+      if (!(await llamar("PUT", "/socios/" + id, { activo }))) return;
+
+      mostrarMensaje("Socio " + id + (activo ? " activado" : " desactivado"), false);
+      await cargarTodo();
+    }
+
     async function borrarSocio(id) {
       if (!(await llamar("DELETE", "/socios/" + id))) return;
 
       mostrarMensaje("Socio " + id + " borrado", false);
+      await cargarTodo();
+    }
+
+    // Clases. Si "claseEnEdicion" tiene un id, el botón del formulario modifica esa clase; si es null, crea una nueva.
+    function limpiarFormClase() {
+      claseEnEdicion = null;
+      document.getElementById("claseNombre").value = "";
+      document.getElementById("claseInstructor").value = "";
+      document.getElementById("claseDia").value = "lunes";
+      document.getElementById("claseHorario").value = "09:00";
+      document.getElementById("claseCupo").value = "";
+      document.getElementById("tituloFormClase").textContent = "Crear clase";
+      document.getElementById("botonGuardarClase").textContent = "Crear";
+      document.getElementById("botonCancelarEdicion").hidden = true;
+    }
+
+    // Pasa los datos de la clase al formulario para modificarla
+    function editarClase(id) {
+      const clase = clasesCargadas.find((c) => c.id === id);
+      if (!clase) return;
+
+      claseEnEdicion = id;
+      document.getElementById("claseNombre").value = clase.nombre;
+      document.getElementById("claseInstructor").value = clase.instructor;
+      document.getElementById("claseDia").value = clase.dia;
+      document.getElementById("claseHorario").value = clase.horario;
+      document.getElementById("claseCupo").value = clase.cupoMaximo;
+      document.getElementById("tituloFormClase").textContent = "Modificar clase " + id;
+      document.getElementById("botonGuardarClase").textContent = "Guardar cambios";
+      document.getElementById("botonCancelarEdicion").hidden = false;
+    }
+
+    async function guardarClase() {
+      const datos = {
+        nombre: document.getElementById("claseNombre").value,
+        instructor: document.getElementById("claseInstructor").value,
+        dia: document.getElementById("claseDia").value,
+        horario: document.getElementById("claseHorario").value,
+        cupoMaximo: Number(document.getElementById("claseCupo").value),
+      };
+
+      const editando = claseEnEdicion !== null;
+      const clase = editando ? await llamar("PUT", "/clases/" + claseEnEdicion, datos) : await llamar("POST", "/clases", datos);
+      if (!clase) return;
+
+      mostrarMensaje(editando ? "Clase " + clase.id + " modificada: " + clase.cuposDisponibles + " cupos libres" : "Clase creada con id " + clase.id, false);
+      limpiarFormClase();
+      await cargarTodo();
+    }
+
+    async function borrarClase(id) {
+      if (!(await llamar("DELETE", "/clases/" + id))) return;
+
+      mostrarMensaje("Clase " + id + " borrada", false);
+      if (claseEnEdicion === id) limpiarFormClase();
       await cargarTodo();
     }
 
