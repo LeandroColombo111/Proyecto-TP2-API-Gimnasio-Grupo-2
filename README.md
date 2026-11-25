@@ -269,7 +269,7 @@ su nombre. Cubren el camino feliz, cada error (con su `code` y su `statusCode`),
 ## Página de demo
 
 Con el servidor levantado, la página http://localhost:8000 permite probar la API desde el navegador: iniciar
-sesión, ver clases y socios, crear y borrar socios, inscribir y cancelar. Cuando la API responde con un error
+sesión, ver clases y socios, crear, modificar y borrar clases, crear, activar/desactivar y borrar socios, inscribir y cancelar. Cuando la API responde con un error
 (por ejemplo `CLASE_SIN_CUPO` o `401`) lo muestra arriba con su código.
 
 Es una sola página (`public/index.html`) con HTML y JavaScript puro que llama a la API con `fetch`. No forma parte

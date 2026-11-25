@@ -14,8 +14,8 @@ Se sirve con `express.static` desde `container/container.js`, así que se abre e
 | Sección | Qué muestra o permite |
 |---|---|
 | Sesión | Login con `POST /auth/login`. El token se guarda en **`localStorage`** (clave `token`): la sesión sigue al recargar y se ve en F12 > Application |
-| Clases | Lista con los cupos libres (`GET /clases`) |
-| Socios | Lista, alta y baja (`GET`, `POST` y `DELETE /socios`) |
+| Clases | Lista con los cupos libres (`GET /clases`), alta, modificación (botón **Editar**: pasa los datos al formulario) y baja (`POST`, `PUT` y `DELETE /clases`) |
+| Socios | Lista, alta, baja y activar/desactivar (`GET`, `POST`, `PUT` y `DELETE /socios`; el botón **Activar/Desactivar** manda solo `{ activo }`) |
 | Inscripciones | Inscribir (`POST /inscripciones`) y cancelar (`PATCH /inscripciones/:id/cancelar`) |
 | Mensaje de arriba | Verde si salió bien; rojo con el `status`, el `code` y el `message` si la API devolvió un error |
 
@@ -43,4 +43,7 @@ Se sirve con `express.static` desde `container/container.js`, así que se abre e
 3. **Iniciar sesión** (valores precargados: los de `ADMIN_EMAIL` y `ADMIN_PASSWORD` del `.env`) y repetir.
 4. Inscribir a dos socios en Spinning (cupo 2) y a un tercero: `409 CLASE_SIN_CUPO`. Cancelar una inscripción y ver
    cómo el cupo vuelve a la clase.
-5. Funciona igual con `PERSISTENCE_TYPE=memory` y con `sequelize`.
+5. Editar Spinning con un cupo menor a los inscriptos: `409 CUPO_INVALIDO`. Borrarla con inscripciones activas:
+   `409 CLASE_CON_INSCRIPCIONES`.
+6. Activar a Sofía (socio 3) y verla en el desplegable sin el cartel "(inactivo)".
+7. Funciona igual con `PERSISTENCE_TYPE=memory` y con `sequelize`.
